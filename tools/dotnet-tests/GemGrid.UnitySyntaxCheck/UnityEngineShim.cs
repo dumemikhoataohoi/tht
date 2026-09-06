@@ -56,6 +56,7 @@ namespace UnityEngine
     {
         public Vector3 position { get; set; }
         public Vector3 localPosition { get; set; }
+        public Vector3 localScale { get; set; }
         public void SetParent(Transform parent, bool worldPositionStays) { }
     }
 
@@ -63,23 +64,38 @@ namespace UnityEngine
     {
         public float x, y, z;
         public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
+        public static Vector3 one => new Vector3(1f, 1f, 1f);
         public static Vector3 operator +(Vector3 a, Vector3 b) => new Vector3(a.x + b.x, a.y + b.y, a.z + b.z);
         public static Vector3 operator -(Vector3 a, Vector3 b) => new Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
+        public static Vector3 operator *(Vector3 a, float d) => new Vector3(a.x * d, a.y * d, a.z * d);
     }
 
     public struct Vector2
     {
         public float x, y;
+        public Vector2(float x, float y) { this.x = x; this.y = y; }
+        public static Vector2 one => new Vector2(1f, 1f);
 
         // Real UnityEngine.Vector2 defines this implicit conversion (dropping/adding a
         // zero z component); several call sites in the codebase rely on it.
         public static implicit operator Vector3(Vector2 v) => new Vector3(v.x, v.y, 0f);
     }
 
+    public class Collider2D : Component
+    {
+    }
+
+    public sealed class BoxCollider2D : Collider2D
+    {
+        public Vector2 size { get; set; }
+    }
+
     public struct Color
     {
+        public Color(float r, float g, float b, float a = 1f) { }
         public static Color gray => default;
         public static Color cyan => default;
+        public static Color white => default;
     }
 
     public sealed class SpriteRenderer : Component
@@ -90,6 +106,25 @@ namespace UnityEngine
 
     public sealed class Sprite
     {
+        public static Sprite Create(Texture2D texture, Rect rect, Vector2 pivot, float pixelsPerUnit) => new Sprite();
+    }
+
+    public struct Rect
+    {
+        public Rect(float x, float y, float width, float height) { }
+    }
+
+    public enum TextureFormat
+    {
+        RGBA32
+    }
+
+    public sealed class Texture2D
+    {
+        public Texture2D(int width, int height) { }
+        public Texture2D(int width, int height, TextureFormat format, bool mipChain) { }
+        public void SetPixel(int x, int y, Color color) { }
+        public void Apply() { }
     }
 
     public sealed class Camera : Component
@@ -98,6 +133,12 @@ namespace UnityEngine
         public bool orthographic { get; set; }
         public float orthographicSize { get; set; }
         public Vector3 ScreenToWorldPoint(Vector3 position) => position;
+    }
+
+    public static class GUI
+    {
+        public static void Label(Rect position, string text) { }
+        public static bool Button(Rect position, string text) => false;
     }
 
     public static class Debug

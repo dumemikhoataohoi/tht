@@ -48,9 +48,18 @@ hết lỗi" bằng cách xoá code nếu không chắc nguyên nhân — báo l
 ### Tạo data asset & scene (KHÔNG hand-edit YAML)
 
 **7. Chạy GemGrid Setup**
-Menu `GemGrid ▸ Setup` xuất hiện sau khi biên dịch xong (từ
-`Assets/_Project/Editor/GemGridAssetSetup.cs` + `GemGridSceneSetup.cs`). Thứ tự hiển
-thị trong menu đã được đánh số 0→5 và Unity sắp xếp đúng thứ tự đó theo prefix số:
+**Việc này giờ tự động** — `GemGridAutoSetup.cs` chạy ngay sau khi Unity biên dịch
+xong (không cần tìm/bấm menu). Nó tự tạo `BlockShapeSet.asset`, `GameplayConfig.asset`,
+`Boot.unity`, `Gameplay.unity`, và tự thêm cả 2 scene vào Build Settings — bỏ qua mọi
+bước đã tồn tại (an toàn khi chạy lại nhiều lần, không ghi đè). Kiểm tra Console sau
+khi import xong: sẽ thấy vài dòng log `[GemGrid] Created ...` nếu đây là lần đầu.
+
+Nếu vì lý do nào đó menu `GemGrid ▸ Setup` vẫn không xuất hiện trong thanh menu chính
+— **không sao**, không cần menu để chạy game, vì bước tự động ở trên đã lo việc đó.
+Menu (từ `Assets/_Project/Editor/GemGridAssetSetup.cs` + `GemGridSceneSetup.cs`) chỉ
+còn dùng để **tạo lại thủ công** khi cần (VD: sau khi xoá asset/scene để làm lại từ
+đầu). Thứ tự hiển thị trong menu (nếu có) được đánh số 0→5, Unity sắp xếp đúng thứ tự
+đó theo prefix số:
 
 | Số | Menu item | Việc gì |
 |---|---|---|
@@ -62,8 +71,9 @@ thị trong menu đã được đánh số 0→5 và Unity sắp xếp đúng th
 | 5 | Create Boot And Gameplay Scenes | Gọi lại mục 3+4 |
 
 **8. Tạo required assets**
-Chạy `GemGrid ▸ Setup ▸ 0. Create All Required Data Assets`. Kết quả mong đợi: 2 asset
-mới tại `Assets/_Project/ScriptableObjects/`:
+Đã tự động chạy ở bước 7. Nếu vì lý do gì đó chưa có (kiểm tra
+`Assets/_Project/ScriptableObjects/`), chạy tay `GemGrid ▸ Setup ▸ 0. Create All
+Required Data Assets`. Kết quả mong đợi: 2 asset tại `Assets/_Project/ScriptableObjects/`:
 - `BlockShapeSet.asset` — 7 shape: dot, domino ngang/dọc, tromino L, square, line3
   ngang/dọc (bảng đầy đủ ở `README_M1.md` §5). Có thể chỉnh/thêm trong Inspector —
   đây là điểm khởi đầu, không phải cân bằng cuối cùng.
@@ -74,18 +84,21 @@ Nếu asset đã tồn tại, menu cảnh báo trong Console và không ghi đè
 muốn tạo lại.
 
 **9. Tạo scenes**
-Chạy `GemGrid ▸ Setup ▸ 5. Create Boot And Gameplay Scenes` (yêu cầu bước 8 đã xong).
-Kết quả mong đợi: `Assets/_Project/Scenes/Boot.unity` + `Gameplay.unity`.
+Đã tự động chạy ở bước 7. Nếu chưa có (kiểm tra `Assets/_Project/Scenes/`), chạy tay
+`GemGrid ▸ Setup ▸ 5. Create Boot And Gameplay Scenes` (yêu cầu bước 8 đã xong).
 - **Boot.unity**: Main Camera + GameObject "Bootstrap" (`GameManagerBehaviour` đã gán
   sẵn 2 asset ở bước 8, grid 8x8, tray 3 slot; `BootLoader` sẽ load scene "Gameplay").
 - **Gameplay.unity**: Main Camera (orthographic, canh giữa lưới 8x8) + GameObject
-  "GameplayRoot" (`GridController`, `BlockDragController`, `HapticHookListener`,
-  `GameplayAnimationHooks`, `AudioHookListener`).
+  "GameplayRoot" (`GridController`, `BlockDragController`, `BlockTray` chứa
+  `BlockTrayView` để hiển thị/kéo 3 block trong khay, `GameplayDebugHud` hiển thị
+  Score/Combo/State + nút Restart, `HapticHookListener`, `GameplayAnimationHooks`,
+  `AudioHookListener`).
 
 **10. Add scenes vào Build Settings**
-**File ▸ Build Settings ▸ Scenes In Build** ▸ kéo `Boot.unity` vào trước (index 0),
-`Gameplay.unity` sau (index 1). Bắt buộc — nếu không, `SceneManager.LoadScene
-("Gameplay")` trong `BootLoader` sẽ không tìm thấy scene bằng tên.
+Đã tự động chạy ở bước 7. Kiểm tra lại: **File ▸ Build Settings ▸ Scenes In Build** —
+`Boot.unity` phải đứng trước (index 0), `Gameplay.unity` sau (index 1). Bắt buộc — nếu
+không, `SceneManager.LoadScene("Gameplay")` trong `BootLoader` sẽ không tìm thấy scene
+bằng tên.
 
 ### Chạy thử
 
@@ -106,18 +119,17 @@ Hierarchy window hoặc gọi `SceneManager.GetActiveScene().name` từ breakpoi
 
 **14. Kiểm tra grid**
 `GridController` tạo 8x8 = 64 GameObject con tên `Cell_x_y` dưới "GameplayRoot" trong
-Hierarchy khi đang Play. **Lưu ý**: `cellSprite` chưa được gán (M1 cố tình để
-placeholder, art thật thuộc M2) nên ô lưới **có thể không hiển thị màu/hình** dù logic
-đã đúng — gán một sprite hình vuông bất kỳ vào field `Cell Sprite` trên
-`GridController` (trong Hierarchy, chọn "GameplayRoot") nếu muốn xác nhận bằng mắt.
+Hierarchy khi đang Play — hiển thị ngay bằng ô vuông xám/xanh cyan tự sinh (không cần
+gán sprite thủ công). Có thể thay bằng sprite riêng qua field `Cell Sprite` trên
+`GridController` nếu muốn, không bắt buộc.
 
 **15. Kiểm tra drag & drop (mouse)**
-Chưa có UI tray thật (M2) để tự bấm-kéo trên màn hình. Cách kiểm tra kiến trúc input:
-gọi `BlockDragController.BeginDrag(slotIndex, someTransform)` từ một script tạm hoặc
-breakpoint, sau đó di chuột trong Game view và quan sát `someTransform.position` cập
-nhật theo `Camera.main.ScreenToWorldPoint`. `IPointerInputSource`
-(`UnityPointerInputSource`) là nơi đọc `Input.mousePosition`/`GetMouseButtonUp` — xem
-`ARCHITECTURE.md` phần "Input abstraction".
+Trong Game view khi đang Play: 3 ô vuông màu cam nằm dưới lưới (GameObject
+`BlockTray/TraySlot_0..2`) là 3 block trong khay. Bấm giữ chuột lên một ô, kéo lên
+lưới, thả — nếu vị trí hợp lệ, block được đặt và biến mất khỏi khay; nếu không hợp lệ,
+nó bật lại đúng vị trí cũ trong khay. Cơ chế: `TrayBlockView.OnMouseDown()` gọi
+`BlockDragController.BeginDrag`, sau đó `Update()` theo dõi con trỏ qua
+`IPointerInputSource` (`UnityPointerInputSource`, đọc `Input.mousePosition`).
 
 **16. Kiểm tra touch input architecture (Android)**
 Không cần thiết bị Android để xác nhận kiến trúc: `UnityPointerInputSource` ưu tiên
@@ -127,33 +139,37 @@ hoặc build APK debug (bước 24 trong `RELEASE_PLAN.md`/mục Build Android b
 test kéo-thả bằng ngón tay thật trên thiết bị/emulator.
 
 **17. Kiểm tra valid placement**
-Gọi `GameManagerBehaviour.Instance.Game.TryPlaceBlock(0, new Int2(0, 0))` (slot 0
-đang có shape hợp lệ) từ Console/script tạm khi đang Play. Kỳ vọng: trả về `true`,
-`Game.Grid.IsCellOccupied(new Int2(0,0)) == true`, `Game.Score.TotalScore` tăng.
+Kéo một block từ khay thả vào ô trống trên lưới (bước 15). Kỳ vọng: ô đó chuyển màu
+(occupied), số **Score** trên góc trái màn hình (từ `GameplayDebugHud`) tăng. Muốn
+kiểm tra chính xác qua code: `GameManagerBehaviour.Instance.Game.TryPlaceBlock(0, new
+Int2(0, 0))` từ Console/script tạm — trả về `true`,
+`Game.Grid.IsCellOccupied(new Int2(0,0)) == true`.
 
 **18. Kiểm tra invalid placement**
-Gọi lại `TryPlaceBlock` với slot khác nhắm vào đúng ô `(0,0)` vừa chiếm. Kỳ vọng: trả
-về `false`, `Game.Score.TotalScore` không đổi.
+Kéo một block thả đè lên ô đã occupied. Kỳ vọng: block bật lại vị trí cũ trong khay
+(bước 15 đã mô tả), Score không đổi. Qua code: gọi lại `TryPlaceBlock` nhắm cùng ô —
+trả về `false`.
 
 **19. Kiểm tra row clear**
-Đặt đủ 8 block liên tiếp lấp đầy 1 hàng (dùng nhiều lệnh `TryPlaceBlock` với toạ độ
-khác nhau trong cùng `y`). Kỳ vọng: hàng đó tự động clear, `Game.Grid.IsCellOccupied`
-trả về `false` cho toàn bộ ô trong hàng sau khi đầy.
+Kéo đủ block lấp đầy 1 hàng (8 ô cùng `y`). Kỳ vọng: hàng đó tự động biến mất
+(clear). Qua code: nhiều lệnh `TryPlaceBlock` với toạ độ khác nhau cùng `y` —
+`Game.Grid.IsCellOccupied` trả về `false` cho toàn bộ ô trong hàng sau khi đầy.
 
 **20. Kiểm tra column clear**
 Tương tự bước 19 nhưng lấp theo cột (`x` cố định, `y` chạy 0→7).
 
 **21. Kiểm tra score & combo**
-Theo dõi `Game.Score.TotalScore` và `Game.Combo.CurrentCombo` (Debug.Log tạm gắn vào
-event `BlockPlaced`/`LinesClearedEvent`/`Combo.ComboChanged`) trong lúc thực hiện bước
-17–20. Kỳ vọng: điểm tăng đúng theo `ScoreRules`, combo tăng khi clear liên tiếp, reset
-về 0 khi có lượt không clear (xem công thức ở `ECONOMY_DESIGN.md`/`GAME_DESIGN.md`).
+Theo dõi dòng **Score**/**Combo** trên `GameplayDebugHud` (góc trái màn hình) trong
+lúc thực hiện bước 17–20. Kỳ vọng: điểm tăng đúng theo `ScoreRules`, combo tăng khi
+clear liên tiếp, reset về 0 khi có lượt không clear (công thức ở
+`ECONOMY_DESIGN.md`/`GAME_DESIGN.md`).
 
 **22. Kiểm tra game over & restart**
-Tiếp tục đặt block cho tới khi không còn shape nào trong tray đặt được vào chỗ trống
-nào của grid. Kỳ vọng: `Game.State == GameStateType.GameOver`, `TryPlaceBlock` sau đó
-luôn trả về `false`. Gọi `GameManagerBehaviour.Instance.Restart()` — kỳ vọng: grid
-trống lại, `Score.TotalScore == 0`, `State == Playing`.
+Tiếp tục đặt block cho tới khi không còn shape nào trong khay đặt được vào chỗ trống
+nào của grid. Kỳ vọng: dòng **State** trên `GameplayDebugHud` chuyển thành
+`GameOver`, chữ "GAME OVER" và nút **Restart** xuất hiện. Bấm **Restart** — kỳ vọng:
+grid trống lại, Score về 0, State về `Playing`. (Qua code:
+`GameManagerBehaviour.Instance.Restart()`.)
 
 ### Chạy test
 

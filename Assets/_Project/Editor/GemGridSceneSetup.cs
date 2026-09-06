@@ -9,33 +9,32 @@ using UnityEngine;
 namespace GemGrid.EditorTools
 {
     /// <summary>
-    /// Menu commands that build the Boot and Gameplay scenes entirely through Unity's
-    /// own scene/GameObject/component APIs — deliberately not hand-authored .unity YAML,
+    /// Builds the Boot and Gameplay scenes entirely through Unity's own
+    /// scene/GameObject/component APIs — deliberately not hand-authored .unity YAML,
     /// since that could not be verified without a real Unity Editor (see README_M1.md /
     /// UNITY_SETUP.md for why). Requires the data assets from
     /// <see cref="GemGridAssetSetup"/> to already exist.
+    ///
+    /// Exposes idempotent <c>Ensure...</c> methods (skip + return early if the scene
+    /// file already exists — never silently overwrites manual edits) alongside menu
+    /// items for manual/explicit use. Used by <see cref="GemGridAutoSetup"/>.
     ///
     /// NOT run in this environment (no Unity Editor available) — see UNITY_SETUP.md.
     /// </summary>
     public static class GemGridSceneSetup
     {
-        private const string ScenesFolder = "Assets/_Project/Scenes";
-        private const string BootScenePath = ScenesFolder + "/Boot.unity";
-        private const string GameplayScenePath = ScenesFolder + "/Gameplay.unity";
-        private const string BlockShapeSetPath = "Assets/_Project/ScriptableObjects/BlockShapeSet.asset";
-        private const string GameplayConfigPath = "Assets/_Project/ScriptableObjects/GameplayConfig.asset";
+        internal const string ScenesFolder = "Assets/_Project/Scenes";
+        internal const string BootScenePath = ScenesFolder + "/Boot.unity";
+        internal const string GameplayScenePath = ScenesFolder + "/Gameplay.unity";
 
-        [MenuItem("GemGrid/Setup/3. Create Boot Scene")]
-        public static void CreateBootScene()
+        /// <summary>Creates Boot.unity if it doesn't already exist. Returns true if it was (or already is) present.</summary>
+        internal static bool EnsureBootScene()
         {
-            var blockShapeSet = AssetDatabase.LoadAssetAtPath<BlockShapeSet>(BlockShapeSetPath);
-            var gameplayConfig = AssetDatabase.LoadAssetAtPath<GameplayConfig>(GameplayConfigPath);
-            if (blockShapeSet == null || gameplayConfig == null)
-            {
-                Debug.LogError("Run 'GemGrid/Setup/0. Create All Required Data Assets' first — " +
-                                "the Boot scene needs BlockShapeSet + GameplayConfig assets to exist.");
-                return;
-            }
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(BootScenePath) != null)
+                return true;
+
+            var blockShapeSet = GemGridAssetSetup.EnsureBlockShapeSet();
+            var gameplayConfig = GemGridAssetSetup.EnsureGameplayConfig();
 
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -56,13 +55,16 @@ namespace GemGrid.EditorTools
 
             EnsureScenesFolder();
             EditorSceneManager.SaveScene(scene, BootScenePath);
-            Debug.Log($"Created {BootScenePath}. Add it to File ▸ Build Settings ▸ Scenes In Build (index 0) " +
-                       "so it loads first — see UNITY_SETUP.md.");
+            Debug.Log($"[GemGrid] Created {BootScenePath}.");
+            return true;
         }
 
-        [MenuItem("GemGrid/Setup/4. Create Gameplay Scene")]
-        public static void CreateGameplayScene()
+        /// <summary>Creates Gameplay.unity if it doesn't already exist. Returns true if it was (or already is) present.</summary>
+        internal static bool EnsureGameplayScene()
         {
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(GameplayScenePath) != null)
+                return true;
+
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
             var cameraGo = new GameObject("Main Camera");
@@ -78,17 +80,47 @@ namespace GemGrid.EditorTools
             rootGo.AddComponent<HapticHookListener>();
             rootGo.AddComponent<GameplayAnimationHooks>();
             rootGo.AddComponent<AudioHookListener>();
+            rootGo.AddComponent<GameplayDebugHud>();
 
             var serializedDragController = new SerializedObject(dragController);
             serializedDragController.FindProperty("gridController").objectReferenceValue = gridController;
             serializedDragController.ApplyModifiedPropertiesWithoutUndo();
 
+            var trayGo = new GameObject("BlockTray");
+            trayGo.transform.SetParent(rootGo.transform, false);
+            var trayView = trayGo.AddComponent<BlockTrayView>();
+            var serializedTrayView = new SerializedObject(trayView);
+            serializedTrayView.FindProperty("dragController").objectReferenceValue = dragController;
+            serializedTrayView.ApplyModifiedPropertiesWithoutUndo();
+
             EnsureScenesFolder();
             EditorSceneManager.SaveScene(scene, GameplayScenePath);
-            Debug.Log($"Created {GameplayScenePath}. GridController has no cellSprite assigned yet, so cells " +
-                       "won't render visibly until you assign a placeholder square sprite in the Inspector — " +
-                       "grid state changes are still testable via the Console/debugger. Add this scene to " +
-                       "File ▸ Build Settings ▸ Scenes In Build (after Boot) — see UNITY_SETUP.md.");
+            Debug.Log($"[GemGrid] Created {GameplayScenePath}.");
+            return true;
+        }
+
+        [MenuItem("GemGrid/Setup/3. Create Boot Scene")]
+        public static void CreateBootScene()
+        {
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(BootScenePath) != null)
+            {
+                Debug.LogWarning($"{BootScenePath} already exists — not overwriting. Delete it first if you want to regenerate.");
+                return;
+            }
+            EnsureBootScene();
+            Debug.Log("Add it to File ▸ Build Settings ▸ Scenes In Build (index 0) so it loads first — see UNITY_SETUP.md.");
+        }
+
+        [MenuItem("GemGrid/Setup/4. Create Gameplay Scene")]
+        public static void CreateGameplayScene()
+        {
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(GameplayScenePath) != null)
+            {
+                Debug.LogWarning($"{GameplayScenePath} already exists — not overwriting. Delete it first if you want to regenerate.");
+                return;
+            }
+            EnsureGameplayScene();
+            Debug.Log("Add it to File ▸ Build Settings ▸ Scenes In Build (after Boot) — see UNITY_SETUP.md.");
         }
 
         [MenuItem("GemGrid/Setup/5. Create Boot And Gameplay Scenes")]

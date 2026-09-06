@@ -34,6 +34,11 @@ namespace UnityEditor
         public MenuItem(string itemName) { }
     }
 
+    [AttributeUsage(AttributeTargets.Class)]
+    public sealed class InitializeOnLoadAttribute : Attribute
+    {
+    }
+
     public static class AssetDatabase
     {
         public static T LoadAssetAtPath<T>(string path) where T : class => null;
@@ -42,6 +47,23 @@ namespace UnityEditor
         public static void Refresh() { }
         public static bool IsValidFolder(string path) => true;
         public static string CreateFolder(string parentFolder, string newFolderName) => parentFolder + "/" + newFolderName;
+    }
+
+    public sealed class EditorBuildSettingsScene
+    {
+        public string path { get; }
+        public bool enabled { get; }
+        public EditorBuildSettingsScene(string path, bool enabled) { this.path = path; this.enabled = enabled; }
+    }
+
+    public static class EditorBuildSettings
+    {
+        public static EditorBuildSettingsScene[] scenes { get; set; } = new EditorBuildSettingsScene[0];
+    }
+
+    public static class EditorApplication
+    {
+        public static Action delayCall;
     }
 
     public static class Selection

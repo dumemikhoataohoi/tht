@@ -23,6 +23,7 @@ namespace GemGrid.Gameplay
         private IPointerInputSource _inputSource = new UnityPointerInputSource();
         private int _draggedSlotIndex = -1;
         private Transform _draggedVisual;
+        private Vector3 _dragStartPosition;
 
         /// <summary>Swap in a fake input source for tests, or a different real backend later.</summary>
         public void SetInputSource(IPointerInputSource inputSource) =>
@@ -44,6 +45,7 @@ namespace GemGrid.Gameplay
         {
             _draggedSlotIndex = traySlotIndex;
             _draggedVisual = visual;
+            _dragStartPosition = visual.position;
         }
 
         private void Update()
@@ -63,7 +65,12 @@ namespace GemGrid.Gameplay
         private void EndDrag(Vector3 worldPosition)
         {
             var origin = gridController.WorldToGrid(worldPosition);
-            _gameManagerBehaviour.Game.TryPlaceBlock(_draggedSlotIndex, origin);
+            bool placed = _gameManagerBehaviour.Game.TryPlaceBlock(_draggedSlotIndex, origin);
+
+            // Invalid placement must not "lose" the block visually either — snap it
+            // back to where the drag started so the player can try again.
+            if (!placed)
+                _draggedVisual.position = _dragStartPosition;
 
             _draggedSlotIndex = -1;
             _draggedVisual = null;
