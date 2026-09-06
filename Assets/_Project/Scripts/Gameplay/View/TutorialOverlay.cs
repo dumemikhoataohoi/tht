@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -34,6 +35,21 @@ namespace GemGrid.Gameplay
         {
             PlayerPrefs.SetInt(SeenPrefKey, 1);
             PlayerPrefs.Save();
+
+            // Deactivating panelRoot here would also deactivate the dismiss button's own
+            // GameObject (it's a child of panelRoot) mid-click — this listener runs as
+            // part of the same Button.onClick dispatch as the button's other listeners
+            // (ButtonPunchFeedback/ButtonClickSfx), and one of those calls StartCoroutine
+            // on that same GameObject. If it runs after the GameObject is already
+            // deactivated, Unity throws "Coroutine couldn't be started because the game
+            // object is inactive". Deferring the deactivation by one frame lets every
+            // listener for this click finish first, regardless of registration order.
+            StartCoroutine(DeactivatePanelNextFrame());
+        }
+
+        private IEnumerator DeactivatePanelNextFrame()
+        {
+            yield return null;
             if (panelRoot != null) panelRoot.SetActive(false);
         }
     }
