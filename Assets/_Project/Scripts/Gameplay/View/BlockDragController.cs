@@ -17,6 +17,7 @@ namespace GemGrid.Gameplay
     public class BlockDragController : MonoBehaviour
     {
         [SerializeField] private GridController gridController;
+        [SerializeField] private PlacementPreviewController placementPreview;
         [SerializeField] private Camera worldCamera;
 
         private GameManagerBehaviour _gameManagerBehaviour;
@@ -63,8 +64,28 @@ namespace GemGrid.Gameplay
             worldPosition.z = 0f;
             _draggedVisual.position = worldPosition;
 
+            UpdatePlacementPreview(worldPosition);
+
             if (pointer.Released)
                 EndDrag(worldPosition);
+        }
+
+        /// <summary>Ghost-highlights the cells the dragged block would occupy at the
+        /// current pointer position, green if legal / red if not — see
+        /// <see cref="PlacementPreviewController"/>. Read-only query, never places anything.</summary>
+        private void UpdatePlacementPreview(Vector3 worldPosition)
+        {
+            if (placementPreview == null) return;
+
+            var block = _gameManagerBehaviour.Game.Spawner.GetSlot(_draggedSlotIndex);
+            if (block.IsEmpty)
+            {
+                placementPreview.HidePreview();
+                return;
+            }
+
+            var origin = gridController.WorldToGrid(worldPosition);
+            placementPreview.ShowPreview(block.Shape, origin);
         }
 
         private void EndDrag(Vector3 worldPosition)
@@ -80,6 +101,8 @@ namespace GemGrid.Gameplay
                 _draggedVisual.position = _dragStartPosition;
                 _draggedVisual.localScale = _dragStartScale;
             }
+
+            if (placementPreview != null) placementPreview.HidePreview();
 
             _draggedSlotIndex = -1;
             _draggedVisual = null;

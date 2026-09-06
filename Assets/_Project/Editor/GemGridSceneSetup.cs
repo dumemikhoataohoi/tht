@@ -140,12 +140,18 @@ namespace GemGrid.EditorTools
             rootGo.AddComponent<GameplaySessionStarter>();
             var gridController = rootGo.AddComponent<GridController>();
             var dragController = rootGo.AddComponent<BlockDragController>();
+            var placementPreview = rootGo.AddComponent<PlacementPreviewController>();
             rootGo.AddComponent<HapticHookListener>();
             rootGo.AddComponent<GameplayAnimationHooks>();
             rootGo.AddComponent<AudioHookListener>();
 
+            var serializedPlacementPreview = new SerializedObject(placementPreview);
+            serializedPlacementPreview.FindProperty("gridController").objectReferenceValue = gridController;
+            serializedPlacementPreview.ApplyModifiedPropertiesWithoutUndo();
+
             var serializedDragController = new SerializedObject(dragController);
             serializedDragController.FindProperty("gridController").objectReferenceValue = gridController;
+            serializedDragController.FindProperty("placementPreview").objectReferenceValue = placementPreview;
             serializedDragController.ApplyModifiedPropertiesWithoutUndo();
 
             var trayGo = new GameObject("BlockTray");
@@ -160,6 +166,7 @@ namespace GemGrid.EditorTools
             var safeArea = CreateSafeAreaContainer(canvas.transform);
             BuildGameplayHud(safeArea);
             BuildGameOverPanel(canvas.transform);
+            BuildTutorialOverlay(canvas.transform);
 
             EnsureScenesFolder();
             EditorSceneManager.SaveScene(scene, GameplayScenePath);
@@ -234,24 +241,29 @@ namespace GemGrid.EditorTools
             var cardGo = new GameObject("GameOverCard");
             cardGo.transform.SetParent(safeArea, false);
             var cardRect = cardGo.AddComponent<RectTransform>();
-            AnchorCenter(cardRect, new Vector2(0f, 20f), new Vector2(840f, 900f));
+            AnchorCenter(cardRect, new Vector2(0f, 10f), new Vector2(860f, 1000f));
             var cardImage = cardGo.AddComponent<Image>();
             cardImage.color = GemPalette.Surface;
 
-            var title = CreateText(safeArea, "GameOverTitle", "GAME OVER", 80, TextColor);
-            AnchorCenter(title.rectTransform, new Vector2(0f, 260f), new Vector2(700f, 120f));
+            var title = CreateText(safeArea, "GameOverTitle", "GAME OVER", 72, TextColor);
+            AnchorCenter(title.rectTransform, new Vector2(0f, 300f), new Vector2(760f, 100f));
 
-            var finalScoreText = CreateText(safeArea, "FinalScoreText", "Score 0", 52, TextColor);
-            AnchorCenter(finalScoreText.rectTransform, new Vector2(0f, 140f), new Vector2(600f, 70f));
+            // Explains WHY the game ended (the only Game Over trigger is "no valid move
+            // left" — GameOverChecker) instead of leaving the player to guess.
+            var reasonText = CreateText(safeArea, "GameOverReasonText", "No more valid moves.", 34, GemPalette.TextSecondary);
+            AnchorCenter(reasonText.rectTransform, new Vector2(0f, 210f), new Vector2(700f, 50f));
 
-            var bestScoreText = CreateText(safeArea, "BestScoreText", "Best 0", 40, TextColor);
-            AnchorCenter(bestScoreText.rectTransform, new Vector2(0f, 70f), new Vector2(600f, 60f));
+            var finalScoreText = CreateText(safeArea, "FinalScoreText", "Score 0", 48, TextColor);
+            AnchorCenter(finalScoreText.rectTransform, new Vector2(0f, 130f), new Vector2(600f, 65f));
+
+            var bestScoreText = CreateText(safeArea, "BestScoreText", "Best 0", 36, TextColor);
+            AnchorCenter(bestScoreText.rectTransform, new Vector2(0f, 60f), new Vector2(600f, 55f));
 
             var restartButton = CreateButton(safeArea, "RestartButton", "RESTART", AccentColor);
-            AnchorCenter(restartButton.GetComponent<RectTransform>(), new Vector2(0f, -60f), new Vector2(500f, 140f));
+            AnchorCenter(restartButton.GetComponent<RectTransform>(), new Vector2(0f, -70f), new Vector2(500f, 140f));
 
             var mainMenuButton = CreateButton(safeArea, "MainMenuButton", "MAIN MENU", GemPalette.Neutral);
-            AnchorCenter(mainMenuButton.GetComponent<RectTransform>(), new Vector2(0f, -230f), new Vector2(500f, 120f));
+            AnchorCenter(mainMenuButton.GetComponent<RectTransform>(), new Vector2(0f, -245f), new Vector2(500f, 115f));
 
             var screenGo = new GameObject("GameOverScreen");
             var screen = screenGo.AddComponent<GameOverScreen>();
@@ -263,6 +275,55 @@ namespace GemGrid.EditorTools
             serializedScreen.FindProperty("restartButton").objectReferenceValue = restartButton;
             serializedScreen.FindProperty("mainMenuButton").objectReferenceValue = mainMenuButton;
             serializedScreen.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>
+        /// First-time-only "how to play" overlay (see <see cref="TutorialOverlay"/>) — a
+        /// dim full-screen panel with a short rules card and a single dismiss button.
+        /// Created last so it renders on top of the HUD/Game Over panel siblings.
+        /// </summary>
+        private static void BuildTutorialOverlay(Transform canvasTransform)
+        {
+            var panelGo = new GameObject("TutorialPanel");
+            panelGo.transform.SetParent(canvasTransform, false);
+            var panelRect = panelGo.AddComponent<RectTransform>();
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
+            panelRect.offsetMin = Vector2.zero;
+            panelRect.offsetMax = Vector2.zero;
+            var panelImage = panelGo.AddComponent<Image>();
+            panelImage.color = new Color(0f, 0f, 0f, 0.82f);
+            panelGo.SetActive(false); // TutorialOverlay.Start() reactivates it iff not yet seen.
+
+            var safeArea = CreateSafeAreaContainer(panelGo.transform);
+
+            var cardGo = new GameObject("TutorialCard");
+            cardGo.transform.SetParent(safeArea, false);
+            var cardRect = cardGo.AddComponent<RectTransform>();
+            AnchorCenter(cardRect, Vector2.zero, new Vector2(880f, 980f));
+            var cardImage = cardGo.AddComponent<Image>();
+            cardImage.color = GemPalette.Surface;
+
+            var title = CreateText(safeArea, "TutorialTitle", "HOW TO PLAY", 60, TextColor);
+            AnchorCenter(title.rectTransform, new Vector2(0f, 380f), new Vector2(760f, 100f));
+
+            const string body =
+                "Drag a block onto the board.\n\n" +
+                "Fill a row or column to clear it.\n\n" +
+                "Clear multiple lines for combo.\n\n" +
+                "No valid move = Game Over.";
+            var bodyText = CreateText(safeArea, "TutorialBodyText", body, 38, TextColor);
+            AnchorCenter(bodyText.rectTransform, new Vector2(0f, 40f), new Vector2(760f, 560f));
+
+            var dismissButton = CreateButton(safeArea, "TutorialDismissButton", "GOT IT", AccentColor);
+            AnchorCenter(dismissButton.GetComponent<RectTransform>(), new Vector2(0f, -380f), new Vector2(420f, 130f));
+
+            var overlayGo = new GameObject("TutorialOverlay");
+            var overlay = overlayGo.AddComponent<TutorialOverlay>();
+            var serializedOverlay = new SerializedObject(overlay);
+            serializedOverlay.FindProperty("panelRoot").objectReferenceValue = panelGo;
+            serializedOverlay.FindProperty("dismissButton").objectReferenceValue = dismissButton;
+            serializedOverlay.ApplyModifiedPropertiesWithoutUndo();
         }
 
         // ---- Reusable UI construction helpers (placeholder-quality, no external assets) ----

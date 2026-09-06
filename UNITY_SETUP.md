@@ -55,12 +55,13 @@ Settings — bỏ qua mọi bước đã tồn tại (an toàn khi chạy lại 
 Kiểm tra Console sau khi import xong: sẽ thấy vài dòng log `[GemGrid] Created ...`
 nếu đây là lần đầu.
 
-> **Đã test M1.5/M2 trước đó (có sẵn `Boot.unity`/`MainMenu.unity`/`Gameplay.unity`
-> cục bộ)?** Auto-setup **sẽ bỏ qua** 3 scene này vì chúng "đã tồn tại" — nghĩa là các
-> thay đổi visual/animation/audio/safe-area của **M3** (xem README/PR) sẽ KHÔNG xuất
-> hiện cho tới khi bạn xoá 3 file cũ. Trước khi mở Unity để test M3: xoá
+> **Đã có sẵn `Boot.unity`/`MainMenu.unity`/`Gameplay.unity` cục bộ từ lần test
+> trước?** Auto-setup **sẽ bỏ qua** 3 scene này vì chúng "đã tồn tại" — nghĩa là bất kỳ
+> thay đổi nào ở `GemGridSceneSetup.cs` (visual/animation/audio/safe-area của M3, hoặc
+> tutorial/placement-preview/Game Over reason text mới nhất) sẽ KHÔNG xuất hiện cho tới
+> khi bạn xoá 3 file cũ. Trước khi mở Unity để test bản mới: xoá
 > `Assets/_Project/Scenes/Boot.unity`, `MainMenu.unity`, `Gameplay.unity` (và các
-> `.meta` đi kèm) rồi mở lại project — auto-setup sẽ tạo lại cả 3 với nội dung M3 mới.
+> `.meta` đi kèm) rồi mở lại project — auto-setup sẽ tạo lại cả 3 với nội dung mới nhất.
 
 Nếu vì lý do nào đó menu `GemGrid ▸ Setup` vẫn không xuất hiện trong thanh menu chính
 — **không sao**, không cần menu để chạy game, vì bước tự động ở trên đã lo việc đó.

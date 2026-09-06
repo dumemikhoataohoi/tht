@@ -51,6 +51,8 @@ namespace GemGrid.Gameplay
                 _gameManagerBehaviour.Game.Grid.GridChanged -= RefreshAllCells;
         }
 
+        public float CellSize => cellSize;
+
         public Vector3 GridToWorld(Int2 cell) =>
             transform.position + new Vector3(cell.X * cellSize, cell.Y * cellSize, 0f);
 
