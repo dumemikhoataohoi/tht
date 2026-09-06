@@ -166,6 +166,10 @@ namespace UnityEngine
         public void SetData(float[] data, int offsetSamples) { }
     }
 
+    public sealed class AudioListener : Component
+    {
+    }
+
     public sealed class AudioSource : Component
     {
         public bool playOnAwake { get; set; }

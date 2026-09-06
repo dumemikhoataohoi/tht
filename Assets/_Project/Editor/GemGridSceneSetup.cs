@@ -53,6 +53,7 @@ namespace GemGrid.EditorTools
             var camera = cameraGo.AddComponent<Camera>();
             camera.orthographic = true;
             cameraGo.tag = "MainCamera";
+            cameraGo.AddComponent<AudioListener>();
 
             var bootstrapGo = new GameObject("Bootstrap");
             var gameManagerBehaviour = bootstrapGo.AddComponent<GameManagerBehaviour>();
@@ -84,6 +85,7 @@ namespace GemGrid.EditorTools
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = BackgroundColor;
             cameraGo.tag = "MainCamera";
+            cameraGo.AddComponent<AudioListener>();
 
             EnsureEventSystem();
             var canvas = CreateCanvas("MainMenuCanvas");
@@ -132,6 +134,7 @@ namespace GemGrid.EditorTools
             camera.backgroundColor = BackgroundColor;
             camera.transform.position = new Vector3(3.5f, 2.5f, -10f);
             cameraGo.tag = "MainCamera";
+            cameraGo.AddComponent<AudioListener>();
 
             var rootGo = new GameObject("GameplayRoot");
             rootGo.AddComponent<GameplaySessionStarter>();
