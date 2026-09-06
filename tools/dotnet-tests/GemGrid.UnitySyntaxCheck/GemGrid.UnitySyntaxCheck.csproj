@@ -36,6 +36,7 @@
   <ItemGroup>
     <Compile Include="UnityEngineShim.cs" />
     <Compile Include="UnityEditorAndTestShim.cs" />
+    <Compile Include="UnityUIShim.cs" />
     <Compile Include="..\..\..\Assets\_Project\Scripts\**\*.cs" />
     <Compile Include="..\..\..\Assets\_Project\Editor\**\*.cs" />
     <Compile Include="..\..\..\Assets\Tests\PlayMode\**\*.cs" />

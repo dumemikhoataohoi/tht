@@ -11,20 +11,20 @@ namespace GemGrid.Tests.PlayMode
     /// <summary>
     /// NOT VERIFIED in this environment — there is no Unity Editor/Player available to
     /// actually run these tests. They are written against my best understanding of the
-    /// Unity Test Framework's PlayMode APIs and the Boot ▸ Gameplay flow this milestone
-    /// introduces, but have never been executed. See README_M1.md / UNITY_SETUP.md.
+    /// Unity Test Framework's PlayMode APIs and the Boot ▸ Main Menu ▸ Gameplay flow
+    /// M2 introduces, but have never been executed. See README_M1.md / UNITY_SETUP.md.
     ///
-    /// Requires Boot.unity and Gameplay.unity to exist (GemGrid ▸ Setup ▸ 5. Create Boot
-    /// And Gameplay Scenes) and both to be added to
-    /// File ▸ Build Settings ▸ Scenes In Build (Boot first) so SceneManager can load
-    /// them by name from a test.
+    /// Requires Boot.unity, MainMenu.unity and Gameplay.unity to exist
+    /// (GemGrid ▸ Setup ▸ 6. Create Boot, Main Menu And Gameplay Scenes) and all three
+    /// to be added to File ▸ Build Settings ▸ Scenes In Build (Boot, MainMenu, Gameplay
+    /// order) so SceneManager can load them by name from a test.
     ///
     /// A dedicated "natural Game Over via Boot" PlayMode test is intentionally NOT
     /// included: reaching Game Over organically depends on which shapes the real
     /// BlockShapeSet asset happens to spawn (random, weighted), which would make such a
     /// test flaky in a way I have no way to tune or verify without a running Editor.
     /// Game Over detection itself is already covered by 6 EditMode tests in
-    /// GameManagerFlowTests.cs, which run against the exact same GameManager class.
+    /// GameOverCheckerTests.cs, which run against the exact same GameManager class.
     /// </summary>
     public class BootFlowTests
     {
@@ -40,17 +40,36 @@ namespace GemGrid.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Boot_LoadsGameplayScene_AndInitializesGameManagerIntoPlayingState()
+        public IEnumerator Boot_LoadsMainMenuScene_AndInitializesGameManagerIntoPlayingState()
         {
             SceneManager.LoadScene("Boot", LoadSceneMode.Single);
             yield return null; // Boot scene objects' Awake/Start
-            yield return null; // BootLoader.Start() triggers LoadScene("Gameplay")
-            yield return null; // Gameplay scene objects' Awake/Start
+            yield return null; // BootLoader.Start() triggers LoadScene("MainMenu")
+            yield return null; // MainMenu scene objects' Awake/Start
 
             Assert.IsNotNull(GameManagerBehaviour.Instance,
                 "Boot should create a persistent GameManagerBehaviour (DontDestroyOnLoad).");
             Assert.AreEqual(GameStateType.Playing, GameManagerBehaviour.Instance.Game.State);
+            Assert.AreEqual("MainMenu", SceneManager.GetActiveScene().name);
+        }
+
+        [UnityTest]
+        public IEnumerator StartGame_FromMainMenu_LoadsGameplaySceneWithFreshBoard()
+        {
+            SceneManager.LoadScene("Boot", LoadSceneMode.Single);
+            yield return null;
+            yield return null;
+            yield return null;
+
+            // Simulate pressing "Start Game" without depending on uGUI event routing —
+            // MainMenuController's button click just loads the Gameplay scene by name.
+            SceneManager.LoadScene("Gameplay", LoadSceneMode.Single);
+            yield return null; // Gameplay scene objects' Awake/Start (GameplaySessionStarter.Restart())
+
             Assert.AreEqual("Gameplay", SceneManager.GetActiveScene().name);
+            Assert.AreEqual(GameStateType.Playing, GameManagerBehaviour.Instance.Game.State);
+            Assert.AreEqual(0, GameManagerBehaviour.Instance.Game.Score.TotalScore,
+                "Entering Gameplay should always start a fresh session (GameplaySessionStarter).");
         }
 
         [UnityTest]

@@ -5,11 +5,13 @@ using GemGrid.Gameplay;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace GemGrid.EditorTools
 {
     /// <summary>
-    /// Builds the Boot and Gameplay scenes entirely through Unity's own
+    /// Builds the Boot, Main Menu, and Gameplay scenes entirely through Unity's own
     /// scene/GameObject/component APIs — deliberately not hand-authored .unity YAML,
     /// since that could not be verified without a real Unity Editor (see README_M1.md /
     /// UNITY_SETUP.md for why). Requires the data assets from
@@ -19,13 +21,22 @@ namespace GemGrid.EditorTools
     /// file already exists — never silently overwrites manual edits) alongside menu
     /// items for manual/explicit use. Used by <see cref="GemGridAutoSetup"/>.
     ///
+    /// UI here is placeholder-quality (flat colors, legacy uGUI Text) per M2 scope —
+    /// functional and responsive, not final art.
+    ///
     /// NOT run in this environment (no Unity Editor available) — see UNITY_SETUP.md.
     /// </summary>
     public static class GemGridSceneSetup
     {
         internal const string ScenesFolder = "Assets/_Project/Scenes";
         internal const string BootScenePath = ScenesFolder + "/Boot.unity";
+        internal const string MainMenuScenePath = ScenesFolder + "/MainMenu.unity";
         internal const string GameplayScenePath = ScenesFolder + "/Gameplay.unity";
+
+        private static readonly Vector2 ReferenceResolution = new Vector2(1080, 1920);
+        private static readonly Color BackgroundColor = new Color(0.09f, 0.10f, 0.16f);
+        private static readonly Color AccentColor = new Color(0.35f, 0.70f, 0.95f);
+        private static readonly Color TextColor = Color.white;
 
         /// <summary>Creates Boot.unity if it doesn't already exist. Returns true if it was (or already is) present.</summary>
         internal static bool EnsureBootScene()
@@ -59,6 +70,48 @@ namespace GemGrid.EditorTools
             return true;
         }
 
+        /// <summary>Creates MainMenu.unity if it doesn't already exist. Returns true if it was (or already is) present.</summary>
+        internal static bool EnsureMainMenuScene()
+        {
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(MainMenuScenePath) != null)
+                return true;
+
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            var cameraGo = new GameObject("Main Camera");
+            var camera = cameraGo.AddComponent<Camera>();
+            camera.orthographic = true;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = BackgroundColor;
+            cameraGo.tag = "MainCamera";
+
+            EnsureEventSystem();
+            var canvas = CreateCanvas("MainMenuCanvas");
+
+            CreateFullScreenBackground(canvas.transform, BackgroundColor);
+
+            var title = CreateText(canvas.transform, "TitleText", "GemGrid", 96, TextColor);
+            AnchorTopCenter(title.rectTransform, new Vector2(0f, -260f), new Vector2(800f, 140f));
+
+            var bestScoreText = CreateText(canvas.transform, "BestScoreText", "Best 0", 48, TextColor);
+            AnchorCenter(bestScoreText.rectTransform, new Vector2(0f, 60f), new Vector2(600f, 80f));
+
+            var startButton = CreateButton(canvas.transform, "StartGameButton", "START GAME", AccentColor);
+            AnchorCenter(startButton.GetComponent<RectTransform>(), new Vector2(0f, -220f), new Vector2(560f, 160f));
+
+            var controllerGo = new GameObject("MainMenuController");
+            var controller = controllerGo.AddComponent<GemGrid.UI.MainMenuController>();
+            var serializedController = new SerializedObject(controller);
+            serializedController.FindProperty("bestScoreText").objectReferenceValue = bestScoreText;
+            serializedController.FindProperty("startGameButton").objectReferenceValue = startButton;
+            serializedController.ApplyModifiedPropertiesWithoutUndo();
+
+            EnsureScenesFolder();
+            EditorSceneManager.SaveScene(scene, MainMenuScenePath);
+            Debug.Log($"[GemGrid] Created {MainMenuScenePath}.");
+            return true;
+        }
+
         /// <summary>Creates Gameplay.unity if it doesn't already exist. Returns true if it was (or already is) present.</summary>
         internal static bool EnsureGameplayScene()
         {
@@ -70,17 +123,19 @@ namespace GemGrid.EditorTools
             var cameraGo = new GameObject("Main Camera");
             var camera = cameraGo.AddComponent<Camera>();
             camera.orthographic = true;
-            camera.orthographicSize = 6f;
-            camera.transform.position = new Vector3(3.5f, 3.5f, -10f);
+            camera.orthographicSize = 7f;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = BackgroundColor;
+            camera.transform.position = new Vector3(3.5f, 2.5f, -10f);
             cameraGo.tag = "MainCamera";
 
             var rootGo = new GameObject("GameplayRoot");
+            rootGo.AddComponent<GameplaySessionStarter>();
             var gridController = rootGo.AddComponent<GridController>();
             var dragController = rootGo.AddComponent<BlockDragController>();
             rootGo.AddComponent<HapticHookListener>();
             rootGo.AddComponent<GameplayAnimationHooks>();
             rootGo.AddComponent<AudioHookListener>();
-            rootGo.AddComponent<GameplayDebugHud>();
 
             var serializedDragController = new SerializedObject(dragController);
             serializedDragController.FindProperty("gridController").objectReferenceValue = gridController;
@@ -93,11 +148,189 @@ namespace GemGrid.EditorTools
             serializedTrayView.FindProperty("dragController").objectReferenceValue = dragController;
             serializedTrayView.ApplyModifiedPropertiesWithoutUndo();
 
+            EnsureEventSystem();
+            var canvas = CreateCanvas("GameplayCanvas");
+            BuildGameplayHud(canvas.transform);
+            BuildGameOverPanel(canvas.transform);
+
             EnsureScenesFolder();
             EditorSceneManager.SaveScene(scene, GameplayScenePath);
             Debug.Log($"[GemGrid] Created {GameplayScenePath}.");
             return true;
         }
+
+        private static void BuildGameplayHud(Transform canvasTransform)
+        {
+            var scoreText = CreateText(canvasTransform, "ScoreText", "Score 0", 56, TextColor);
+            AnchorTopLeft(scoreText.rectTransform, new Vector2(40f, -50f), new Vector2(400f, 70f));
+
+            var bestScoreText = CreateText(canvasTransform, "BestScoreText", "Best 0", 36, TextColor);
+            AnchorTopLeft(bestScoreText.rectTransform, new Vector2(40f, -110f), new Vector2(400f, 50f));
+
+            var comboBadgeGo = new GameObject("ComboBadge");
+            comboBadgeGo.transform.SetParent(canvasTransform, false);
+            var comboBadgeRect = comboBadgeGo.AddComponent<RectTransform>();
+            AnchorTopCenter(comboBadgeRect, new Vector2(0f, -60f), new Vector2(320f, 70f));
+
+            var comboText = CreateText(comboBadgeGo.transform, "ComboText", string.Empty, 44, new Color(1f, 0.85f, 0.3f));
+            comboText.alignment = TextAnchor.MiddleCenter;
+            var comboTextRect = comboText.rectTransform;
+            comboTextRect.anchorMin = Vector2.zero;
+            comboTextRect.anchorMax = Vector2.one;
+            comboTextRect.offsetMin = Vector2.zero;
+            comboTextRect.offsetMax = Vector2.zero;
+
+            var hudGo = new GameObject("GameplayHud");
+            var hud = hudGo.AddComponent<GameplayHud>();
+            var serializedHud = new SerializedObject(hud);
+            serializedHud.FindProperty("scoreText").objectReferenceValue = scoreText;
+            serializedHud.FindProperty("bestScoreText").objectReferenceValue = bestScoreText;
+            serializedHud.FindProperty("comboText").objectReferenceValue = comboText;
+            serializedHud.FindProperty("comboBadge").objectReferenceValue = comboBadgeRect;
+            serializedHud.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static void BuildGameOverPanel(Transform canvasTransform)
+        {
+            var panelGo = new GameObject("GameOverPanel");
+            panelGo.transform.SetParent(canvasTransform, false);
+            var panelRect = panelGo.AddComponent<RectTransform>();
+            panelRect.anchorMin = Vector2.zero;
+            panelRect.anchorMax = Vector2.one;
+            panelRect.offsetMin = Vector2.zero;
+            panelRect.offsetMax = Vector2.zero;
+            var panelImage = panelGo.AddComponent<Image>();
+            panelImage.color = new Color(0f, 0f, 0f, 0.75f);
+            panelGo.SetActive(false);
+
+            var title = CreateText(panelGo.transform, "GameOverTitle", "GAME OVER", 80, TextColor);
+            AnchorCenter(title.rectTransform, new Vector2(0f, 260f), new Vector2(700f, 120f));
+
+            var finalScoreText = CreateText(panelGo.transform, "FinalScoreText", "Score 0", 52, TextColor);
+            AnchorCenter(finalScoreText.rectTransform, new Vector2(0f, 140f), new Vector2(600f, 70f));
+
+            var bestScoreText = CreateText(panelGo.transform, "BestScoreText", "Best 0", 40, TextColor);
+            AnchorCenter(bestScoreText.rectTransform, new Vector2(0f, 70f), new Vector2(600f, 60f));
+
+            var restartButton = CreateButton(panelGo.transform, "RestartButton", "RESTART", AccentColor);
+            AnchorCenter(restartButton.GetComponent<RectTransform>(), new Vector2(0f, -60f), new Vector2(500f, 140f));
+
+            var mainMenuButton = CreateButton(panelGo.transform, "MainMenuButton", "MAIN MENU", new Color(0.5f, 0.5f, 0.55f));
+            AnchorCenter(mainMenuButton.GetComponent<RectTransform>(), new Vector2(0f, -230f), new Vector2(500f, 120f));
+
+            var screenGo = new GameObject("GameOverScreen");
+            var screen = screenGo.AddComponent<GameOverScreen>();
+            var serializedScreen = new SerializedObject(screen);
+            serializedScreen.FindProperty("panelRoot").objectReferenceValue = panelGo;
+            serializedScreen.FindProperty("finalScoreText").objectReferenceValue = finalScoreText;
+            serializedScreen.FindProperty("bestScoreText").objectReferenceValue = bestScoreText;
+            serializedScreen.FindProperty("restartButton").objectReferenceValue = restartButton;
+            serializedScreen.FindProperty("mainMenuButton").objectReferenceValue = mainMenuButton;
+            serializedScreen.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        // ---- Reusable UI construction helpers (placeholder-quality, no external assets) ----
+
+        private static Canvas CreateCanvas(string name)
+        {
+            var canvasGo = new GameObject(name);
+            var canvas = canvasGo.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+
+            var scaler = canvasGo.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = ReferenceResolution;
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+            scaler.matchWidthOrHeight = 0.5f;
+
+            canvasGo.AddComponent<GraphicRaycaster>();
+            return canvas;
+        }
+
+        private static void EnsureEventSystem()
+        {
+            if (Object.FindObjectOfType<EventSystem>() != null) return;
+            var eventSystemGo = new GameObject("EventSystem");
+            eventSystemGo.AddComponent<EventSystem>();
+            eventSystemGo.AddComponent<StandaloneInputModule>();
+        }
+
+        private static void CreateFullScreenBackground(Transform parent, Color color)
+        {
+            var go = new GameObject("Background");
+            go.transform.SetParent(parent, false);
+            var rect = go.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            var image = go.AddComponent<Image>();
+            image.color = color;
+        }
+
+        private static Text CreateText(Transform parent, string name, string content, int fontSize, Color color)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            var text = go.AddComponent<Text>();
+            text.text = content;
+            text.font = DefaultFont.Get();
+            text.fontSize = fontSize;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.color = color;
+            return text;
+        }
+
+        private static Button CreateButton(Transform parent, string name, string label, Color color)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.AddComponent<RectTransform>();
+
+            var image = go.AddComponent<Image>();
+            image.color = color;
+
+            var button = go.AddComponent<Button>();
+            go.AddComponent<ButtonPunchFeedback>();
+
+            var label_ = CreateText(go.transform, "Label", label, 40, TextColor);
+            var labelRect = label_.rectTransform;
+            labelRect.anchorMin = Vector2.zero;
+            labelRect.anchorMax = Vector2.one;
+            labelRect.offsetMin = Vector2.zero;
+            labelRect.offsetMax = Vector2.zero;
+
+            return button;
+        }
+
+        private static void AnchorTopLeft(RectTransform rect, Vector2 anchoredPosition, Vector2 size)
+        {
+            rect.anchorMin = new Vector2(0f, 1f);
+            rect.anchorMax = new Vector2(0f, 1f);
+            rect.pivot = new Vector2(0f, 1f);
+            rect.sizeDelta = size;
+            rect.anchoredPosition = anchoredPosition;
+        }
+
+        private static void AnchorTopCenter(RectTransform rect, Vector2 anchoredPosition, Vector2 size)
+        {
+            rect.anchorMin = new Vector2(0.5f, 1f);
+            rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.sizeDelta = size;
+            rect.anchoredPosition = anchoredPosition;
+        }
+
+        private static void AnchorCenter(RectTransform rect, Vector2 anchoredPosition, Vector2 size)
+        {
+            rect.anchorMin = new Vector2(0.5f, 0.5f);
+            rect.anchorMax = new Vector2(0.5f, 0.5f);
+            rect.pivot = new Vector2(0.5f, 0.5f);
+            rect.sizeDelta = size;
+            rect.anchoredPosition = anchoredPosition;
+        }
+
+        // ---- Menu items (manual/explicit re-runs; auto-setup covers the normal path) ----
 
         [MenuItem("GemGrid/Setup/3. Create Boot Scene")]
         public static void CreateBootScene()
@@ -111,7 +344,18 @@ namespace GemGrid.EditorTools
             Debug.Log("Add it to File ▸ Build Settings ▸ Scenes In Build (index 0) so it loads first — see UNITY_SETUP.md.");
         }
 
-        [MenuItem("GemGrid/Setup/4. Create Gameplay Scene")]
+        [MenuItem("GemGrid/Setup/4. Create Main Menu Scene")]
+        public static void CreateMainMenuScene()
+        {
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(MainMenuScenePath) != null)
+            {
+                Debug.LogWarning($"{MainMenuScenePath} already exists — not overwriting. Delete it first if you want to regenerate.");
+                return;
+            }
+            EnsureMainMenuScene();
+        }
+
+        [MenuItem("GemGrid/Setup/5. Create Gameplay Scene")]
         public static void CreateGameplayScene()
         {
             if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(GameplayScenePath) != null)
@@ -120,13 +364,14 @@ namespace GemGrid.EditorTools
                 return;
             }
             EnsureGameplayScene();
-            Debug.Log("Add it to File ▸ Build Settings ▸ Scenes In Build (after Boot) — see UNITY_SETUP.md.");
+            Debug.Log("Add it to File ▸ Build Settings ▸ Scenes In Build (after Boot + MainMenu) — see UNITY_SETUP.md.");
         }
 
-        [MenuItem("GemGrid/Setup/5. Create Boot And Gameplay Scenes")]
+        [MenuItem("GemGrid/Setup/6. Create Boot, Main Menu And Gameplay Scenes")]
         public static void CreateAllScenes()
         {
             CreateBootScene();
+            CreateMainMenuScene();
             CreateGameplayScene();
         }
 

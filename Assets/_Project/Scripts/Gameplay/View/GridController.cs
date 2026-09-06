@@ -1,3 +1,4 @@
+using System.Collections;
 using GemGrid.Core;
 using UnityEngine;
 
@@ -8,7 +9,10 @@ namespace GemGrid.Gameplay
     /// coordinates, and renders one sprite per cell so state changes are visible.
     /// Falls back to an auto-generated white square (<see cref="PlaceholderSprite"/>)
     /// if no sprite is assigned in the Inspector, so the grid is visible on Play with
-    /// zero manual setup — final art/animation is out of scope for M1 (see M2 - UI).
+    /// zero manual setup. Plays a small "pop" when a cell becomes newly occupied and a
+    /// "flash" when a cell is cleared, detected by diffing occupancy against the
+    /// previous frame's state — no changes to the tested Gameplay logic layer needed.
+    /// Real art/polish belongs to a later pass; this is placeholder-quality per M2 scope.
     ///
     /// NOT verified in the Unity Editor/Play Mode in this environment — see README_M1.md.
     /// </summary>
@@ -16,11 +20,13 @@ namespace GemGrid.Gameplay
     {
         [SerializeField] private float cellSize = 1f;
         [SerializeField] private Sprite cellSprite;
-        [SerializeField] private Color emptyColor = Color.gray;
-        [SerializeField] private Color occupiedColor = Color.cyan;
+        [SerializeField] private Color emptyColor = new Color(0.16f, 0.18f, 0.26f);
+        [SerializeField] private Color occupiedColor = new Color(0.25f, 0.85f, 0.65f);
+        [SerializeField] private Color clearFlashColor = Color.white;
 
         private GameManagerBehaviour _gameManagerBehaviour;
         private SpriteRenderer[,] _cellViews;
+        private bool[,] _wasOccupied;
 
         private void Awake()
         {
@@ -59,6 +65,7 @@ namespace GemGrid.Gameplay
         {
             var grid = _gameManagerBehaviour.Game.Grid;
             _cellViews = new SpriteRenderer[grid.Width, grid.Height];
+            _wasOccupied = new bool[grid.Width, grid.Height];
 
             for (int y = 0; y < grid.Height; y++)
             {
@@ -84,10 +91,48 @@ namespace GemGrid.Gameplay
             {
                 for (int x = 0; x < grid.Width; x++)
                 {
-                    var cell = new Int2(x, y);
-                    _cellViews[x, y].color = grid.IsCellOccupied(cell) ? occupiedColor : emptyColor;
+                    bool occupied = grid.IsCellOccupied(new Int2(x, y));
+                    bool wasOccupied = _wasOccupied[x, y];
+                    var renderer = _cellViews[x, y];
+                    renderer.color = occupied ? occupiedColor : emptyColor;
+
+                    if (occupied && !wasOccupied)
+                        StartCoroutine(PopAnimation(renderer.transform));
+                    else if (!occupied && wasOccupied)
+                        StartCoroutine(FlashAnimation(renderer));
+
+                    _wasOccupied[x, y] = occupied;
                 }
             }
+        }
+
+        private IEnumerator PopAnimation(Transform cellTransform)
+        {
+            Vector3 baseScale = Vector3.one * (cellSize * 0.9f);
+            const float duration = 0.12f;
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+                float k = Mathf.Lerp(1.35f, 1f, t / duration);
+                cellTransform.localScale = baseScale * k;
+                yield return null;
+            }
+            cellTransform.localScale = baseScale;
+        }
+
+        private IEnumerator FlashAnimation(SpriteRenderer renderer)
+        {
+            Color target = emptyColor;
+            const float duration = 0.18f;
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+                renderer.color = Color.Lerp(clearFlashColor, target, t / duration);
+                yield return null;
+            }
+            renderer.color = target;
         }
     }
 }

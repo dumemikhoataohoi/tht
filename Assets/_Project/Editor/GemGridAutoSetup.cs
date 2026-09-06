@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -37,30 +38,42 @@ namespace GemGrid.EditorTools
                 GemGridAssetSetup.EnsureBlockShapeSet();
                 GemGridAssetSetup.EnsureGameplayConfig();
                 GemGridSceneSetup.EnsureBootScene();
+                GemGridSceneSetup.EnsureMainMenuScene();
                 GemGridSceneSetup.EnsureGameplayScene();
                 EnsureBuildSettingsScenes();
             }
             catch (Exception ex)
             {
                 Debug.LogError($"[GemGrid] Automatic setup failed — you can still run it manually via " +
-                                $"GemGrid ▸ Setup ▸ 0/5, or fix the error below and it will retry on next compile.\n{ex}");
+                                $"GemGrid ▸ Setup ▸ 0/6, or fix the error below and it will retry on next compile.\n{ex}");
             }
         }
 
         private static void EnsureBuildSettingsScenes()
         {
-            bool hasBoot = EditorBuildSettings.scenes.Any(s => s.path == GemGridSceneSetup.BootScenePath);
-            bool hasGameplay = EditorBuildSettings.scenes.Any(s => s.path == GemGridSceneSetup.GameplayScenePath);
-            if (hasBoot && hasGameplay) return;
+            string[] canonicalOrder =
+            {
+                GemGridSceneSetup.BootScenePath,
+                GemGridSceneSetup.MainMenuScenePath,
+                GemGridSceneSetup.GameplayScenePath,
+            };
 
-            var scenes = EditorBuildSettings.scenes.ToList();
-            if (!hasBoot)
-                scenes.Insert(0, new EditorBuildSettingsScene(GemGridSceneSetup.BootScenePath, true));
-            if (!hasGameplay)
-                scenes.Add(new EditorBuildSettingsScene(GemGridSceneSetup.GameplayScenePath, true));
+            var current = EditorBuildSettings.scenes;
+            bool alreadyCorrect = current.Length >= canonicalOrder.Length
+                                  && canonicalOrder.SequenceEqual(current.Take(canonicalOrder.Length).Select(s => s.path));
+            if (alreadyCorrect) return;
 
-            EditorBuildSettings.scenes = scenes.ToArray();
-            Debug.Log("[GemGrid] Added Boot/Gameplay scenes to Build Settings (Scenes In Build).");
+            // Keep any other scenes the project already had, appended after the three
+            // canonical ones, so this never silently discards unrelated Build Settings entries.
+            var extras = current.Where(s => !canonicalOrder.Contains(s.path)).ToList();
+
+            var newScenes = new List<EditorBuildSettingsScene>();
+            foreach (var path in canonicalOrder)
+                newScenes.Add(new EditorBuildSettingsScene(path, true));
+            newScenes.AddRange(extras);
+
+            EditorBuildSettings.scenes = newScenes.ToArray();
+            Debug.Log("[GemGrid] Set Build Settings scene order: Boot, MainMenu, Gameplay.");
         }
     }
 }

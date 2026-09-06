@@ -17,6 +17,7 @@ namespace UnityEngine
     {
         public string name;
         public static void Destroy(Object obj) { }
+        public static T FindObjectOfType<T>() where T : class => null;
     }
 
     public class Component : Object
@@ -35,6 +36,7 @@ namespace UnityEngine
     public class MonoBehaviour : Behaviour
     {
         public static void DontDestroyOnLoad(Object obj) { }
+        public object StartCoroutine(System.Collections.IEnumerator routine) => null;
     }
 
     public class ScriptableObject : Object
@@ -46,18 +48,33 @@ namespace UnityEngine
     {
         public Transform transform { get; }
         public string tag { get; set; }
+        public bool activeSelf { get; private set; } = true;
         public GameObject() { }
         public GameObject(string name) { this.name = name; }
         public T AddComponent<T>() where T : Component, new() => new T();
         public T GetComponent<T>() where T : class => default;
+        public void SetActive(bool active) => activeSelf = active;
     }
 
-    public sealed class Transform
+    // Real UnityEngine.Transform is itself a Component (and RectTransform extends
+    // Transform) — mirrored here so RectTransform can be added via AddComponent<T>().
+    public class Transform : Component
     {
         public Vector3 position { get; set; }
         public Vector3 localPosition { get; set; }
         public Vector3 localScale { get; set; }
         public void SetParent(Transform parent, bool worldPositionStays) { }
+    }
+
+    public sealed class RectTransform : Transform
+    {
+        public Vector2 anchorMin { get; set; }
+        public Vector2 anchorMax { get; set; }
+        public Vector2 pivot { get; set; }
+        public Vector2 sizeDelta { get; set; }
+        public Vector2 anchoredPosition { get; set; }
+        public Vector2 offsetMin { get; set; }
+        public Vector2 offsetMax { get; set; }
     }
 
     public struct Vector3
@@ -68,12 +85,15 @@ namespace UnityEngine
         public static Vector3 operator +(Vector3 a, Vector3 b) => new Vector3(a.x + b.x, a.y + b.y, a.z + b.z);
         public static Vector3 operator -(Vector3 a, Vector3 b) => new Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
         public static Vector3 operator *(Vector3 a, float d) => new Vector3(a.x * d, a.y * d, a.z * d);
+        public static Vector3 Lerp(Vector3 a, Vector3 b, float t) =>
+            new Vector3(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, a.z + (b.z - a.z) * t);
     }
 
     public struct Vector2
     {
         public float x, y;
         public Vector2(float x, float y) { this.x = x; this.y = y; }
+        public static Vector2 zero => new Vector2(0f, 0f);
         public static Vector2 one => new Vector2(1f, 1f);
 
         // Real UnityEngine.Vector2 defines this implicit conversion (dropping/adding a
@@ -96,6 +116,7 @@ namespace UnityEngine
         public static Color gray => default;
         public static Color cyan => default;
         public static Color white => default;
+        public static Color Lerp(Color a, Color b, float t) => default;
     }
 
     public sealed class SpriteRenderer : Component
@@ -127,12 +148,28 @@ namespace UnityEngine
         public void Apply() { }
     }
 
+    public enum CameraClearFlags
+    {
+        Skybox, SolidColor, Depth, Nothing
+    }
+
     public sealed class Camera : Component
     {
         public static Camera main => default;
         public bool orthographic { get; set; }
         public float orthographicSize { get; set; }
+        public CameraClearFlags clearFlags { get; set; }
+        public Color backgroundColor { get; set; }
         public Vector3 ScreenToWorldPoint(Vector3 position) => position;
+    }
+
+    public sealed class Font : Object
+    {
+    }
+
+    public static class Resources
+    {
+        public static T GetBuiltinResource<T>(string path) where T : Object => null;
     }
 
     public static class GUI
@@ -170,6 +207,19 @@ namespace UnityEngine
     public static class Mathf
     {
         public static int RoundToInt(float f) => (int)Math.Round(f, MidpointRounding.AwayFromZero);
+        public static float Lerp(float a, float b, float t) => a + (b - a) * Math.Clamp(t, 0f, 1f);
+    }
+
+    public static class Time
+    {
+        public static float deltaTime => 0f;
+    }
+
+    public static class PlayerPrefs
+    {
+        public static int GetInt(string key, int defaultValue = 0) => defaultValue;
+        public static void SetInt(string key, int value) { }
+        public static void Save() { }
     }
 
     [AttributeUsage(AttributeTargets.Field)]

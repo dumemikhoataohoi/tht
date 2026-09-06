@@ -1,17 +1,11 @@
 {
-    "name": "GemGrid.EditorTools",
-    "rootNamespace": "GemGrid.EditorTools",
+    "name": "GemGrid.UI",
+    "rootNamespace": "GemGrid.UI",
     "references": [
         "GemGrid.Core",
-        "GemGrid.Configuration",
-        "GemGrid.Gameplay",
-        "GemGrid.Audio",
-        "GemGrid.Bootstrap",
-        "GemGrid.UI"
+        "GemGrid.Gameplay"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

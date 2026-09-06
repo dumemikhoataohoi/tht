@@ -50,15 +50,16 @@ hết lỗi" bằng cách xoá code nếu không chắc nguyên nhân — báo l
 **7. Chạy GemGrid Setup**
 **Việc này giờ tự động** — `GemGridAutoSetup.cs` chạy ngay sau khi Unity biên dịch
 xong (không cần tìm/bấm menu). Nó tự tạo `BlockShapeSet.asset`, `GameplayConfig.asset`,
-`Boot.unity`, `Gameplay.unity`, và tự thêm cả 2 scene vào Build Settings — bỏ qua mọi
-bước đã tồn tại (an toàn khi chạy lại nhiều lần, không ghi đè). Kiểm tra Console sau
-khi import xong: sẽ thấy vài dòng log `[GemGrid] Created ...` nếu đây là lần đầu.
+`Boot.unity`, `MainMenu.unity`, `Gameplay.unity`, và tự thêm cả 3 scene vào Build
+Settings — bỏ qua mọi bước đã tồn tại (an toàn khi chạy lại nhiều lần, không ghi đè).
+Kiểm tra Console sau khi import xong: sẽ thấy vài dòng log `[GemGrid] Created ...`
+nếu đây là lần đầu.
 
 Nếu vì lý do nào đó menu `GemGrid ▸ Setup` vẫn không xuất hiện trong thanh menu chính
 — **không sao**, không cần menu để chạy game, vì bước tự động ở trên đã lo việc đó.
 Menu (từ `Assets/_Project/Editor/GemGridAssetSetup.cs` + `GemGridSceneSetup.cs`) chỉ
 còn dùng để **tạo lại thủ công** khi cần (VD: sau khi xoá asset/scene để làm lại từ
-đầu). Thứ tự hiển thị trong menu (nếu có) được đánh số 0→5, Unity sắp xếp đúng thứ tự
+đầu). Thứ tự hiển thị trong menu (nếu có) được đánh số 0→6, Unity sắp xếp đúng thứ tự
 đó theo prefix số:
 
 | Số | Menu item | Việc gì |
@@ -67,8 +68,9 @@ còn dùng để **tạo lại thủ công** khi cần (VD: sau khi xoá asset/s
 | 1 | Create Starter Block Shape Set | Tạo `BlockShapeSet.asset` với 7 shape khởi điểm |
 | 2 | Create Default Gameplay Config | Tạo `GameplayConfig.asset` với ScoreRules/ComboRules mặc định |
 | 3 | Create Boot Scene | Tạo `Boot.unity` (cần asset ở mục 1,2 đã tồn tại) |
-| 4 | Create Gameplay Scene | Tạo `Gameplay.unity` |
-| 5 | Create Boot And Gameplay Scenes | Gọi lại mục 3+4 |
+| 4 | Create Main Menu Scene | Tạo `MainMenu.unity` |
+| 5 | Create Gameplay Scene | Tạo `Gameplay.unity` |
+| 6 | Create Boot, Main Menu And Gameplay Scenes | Gọi lại mục 3+4+5 |
 
 **8. Tạo required assets**
 Đã tự động chạy ở bước 7. Nếu vì lý do gì đó chưa có (kiểm tra
@@ -85,47 +87,55 @@ muốn tạo lại.
 
 **9. Tạo scenes**
 Đã tự động chạy ở bước 7. Nếu chưa có (kiểm tra `Assets/_Project/Scenes/`), chạy tay
-`GemGrid ▸ Setup ▸ 5. Create Boot And Gameplay Scenes` (yêu cầu bước 8 đã xong).
+`GemGrid ▸ Setup ▸ 6. Create Boot, Main Menu And Gameplay Scenes` (yêu cầu bước 8 đã
+xong).
 - **Boot.unity**: Main Camera + GameObject "Bootstrap" (`GameManagerBehaviour` đã gán
-  sẵn 2 asset ở bước 8, grid 8x8, tray 3 slot; `BootLoader` sẽ load scene "Gameplay").
+  sẵn 2 asset ở bước 8, grid 8x8, tray 3 slot; `BootLoader` sẽ load scene "MainMenu").
+- **MainMenu.unity**: Canvas (responsive, Scale With Screen Size 1080x1920) với tiêu
+  đề "GemGrid", Best Score, nút **START GAME** (`MainMenuController` load scene
+  "Gameplay" khi bấm).
 - **Gameplay.unity**: Main Camera (orthographic, canh giữa lưới 8x8) + GameObject
-  "GameplayRoot" (`GridController`, `BlockDragController`, `BlockTray` chứa
-  `BlockTrayView` để hiển thị/kéo 3 block trong khay, `GameplayDebugHud` hiển thị
-  Score/Combo/State + nút Restart, `HapticHookListener`, `GameplayAnimationHooks`,
-  `AudioHookListener`).
+  "GameplayRoot" (`GameplaySessionStarter` đảm bảo luôn vào ván mới, `GridController`,
+  `BlockDragController`, `BlockTray` chứa `BlockTrayView` để hiển thị/kéo 3 block màu
+  gem trong khay, `HapticHookListener`, `GameplayAnimationHooks`, `AudioHookListener`)
+  + Canvas chứa `GameplayHud` (Score/Best/Combo) và `GameOverScreen` (panel ẩn, hiện
+  khi Game Over với nút RESTART/MAIN MENU).
 
 **10. Add scenes vào Build Settings**
 Đã tự động chạy ở bước 7. Kiểm tra lại: **File ▸ Build Settings ▸ Scenes In Build** —
-`Boot.unity` phải đứng trước (index 0), `Gameplay.unity` sau (index 1). Bắt buộc — nếu
-không, `SceneManager.LoadScene("Gameplay")` trong `BootLoader` sẽ không tìm thấy scene
-bằng tên.
+thứ tự phải là `Boot.unity` (0), `MainMenu.unity` (1), `Gameplay.unity` (2). Bắt buộc
+— nếu không, `SceneManager.LoadScene(...)` trong `BootLoader`/`MainMenuController`/
+`GameOverScreen` sẽ không tìm thấy scene bằng tên.
 
 ### Chạy thử
 
 **11. Mở Boot scene**
 Double-click `Assets/_Project/Scenes/Boot.unity` trong Project window. **Không** mở
-trực tiếp `Gameplay.unity` để Play — `GridController`/`BlockDragController`/hook
-listener đọc `GameManagerBehaviour.Instance`, chỉ tồn tại sau khi Boot chạy qua
-(`DontDestroyOnLoad`).
+trực tiếp `MainMenu.unity`/`Gameplay.unity` để Play — các script đọc
+`GameManagerBehaviour.Instance`, chỉ tồn tại sau khi Boot chạy qua (`DontDestroyOnLoad`).
 
 **12. Play**
-Bấm nút Play. Kỳ vọng: Console không có exception.
+Bấm nút Play. Kỳ vọng: Console không có exception, màn hình Main Menu hiện ra (nền
+tối, tiêu đề "GemGrid", Best Score, nút START GAME).
 
-**13. Kiểm tra Boot → Gameplay**
-Sau ~1 frame, scene đang active phải chuyển từ `Boot` sang `Gameplay` (xem tiêu đề
-Hierarchy window hoặc gọi `SceneManager.GetActiveScene().name` từ breakpoint/log tạm).
-`GameManagerBehaviour.Instance` phải khác null và
-`GameManagerBehaviour.Instance.Game.State == GameStateType.Playing`.
+**13. Kiểm tra Boot → Main Menu → Gameplay**
+Sau ~1 frame, scene đang active chuyển từ `Boot` sang `MainMenu`
+(`GameManagerBehaviour.Instance` phải khác null và
+`GameManagerBehaviour.Instance.Game.State == GameStateType.Playing` ngay từ lúc này).
+Bấm nút **START GAME** — scene chuyển sang `Gameplay`, ván mới bắt đầu (grid trống,
+Score = 0) nhờ `GameplaySessionStarter` gọi `Restart()` mỗi khi vào Gameplay.
 
 **14. Kiểm tra grid**
 `GridController` tạo 8x8 = 64 GameObject con tên `Cell_x_y` dưới "GameplayRoot" trong
-Hierarchy khi đang Play — hiển thị ngay bằng ô vuông xám/xanh cyan tự sinh (không cần
-gán sprite thủ công). Có thể thay bằng sprite riêng qua field `Cell Sprite` trên
+Hierarchy khi đang Play — hiển thị ngay bằng ô vuông xanh navy (trống)/xanh ngọc
+(đã chiếm) tự sinh (không cần gán sprite thủ công), kèm hiệu ứng pop khi đặt và
+flash trắng khi clear. Có thể thay bằng sprite riêng qua field `Cell Sprite` trên
 `GridController` nếu muốn, không bắt buộc.
 
 **15. Kiểm tra drag & drop (mouse)**
-Trong Game view khi đang Play: 3 ô vuông màu cam nằm dưới lưới (GameObject
-`BlockTray/TraySlot_0..2`) là 3 block trong khay. Bấm giữ chuột lên một ô, kéo lên
+Trong Game view khi đang Play: 3 ô vuông màu gem (tím/hổ phách/lam ngọc/hồng/jade —
+mỗi màu ứng với 1 shape) nằm dưới lưới (GameObject `BlockTray/TraySlot_0..2`) là 3
+block trong khay. Bấm giữ chuột lên một ô, kéo lên
 lưới, thả — nếu vị trí hợp lệ, block được đặt và biến mất khỏi khay; nếu không hợp lệ,
 nó bật lại đúng vị trí cũ trong khay. Cơ chế: `TrayBlockView.OnMouseDown()` gọi
 `BlockDragController.BeginDrag`, sau đó `Update()` theo dõi con trỏ qua
@@ -140,7 +150,7 @@ test kéo-thả bằng ngón tay thật trên thiết bị/emulator.
 
 **17. Kiểm tra valid placement**
 Kéo một block từ khay thả vào ô trống trên lưới (bước 15). Kỳ vọng: ô đó chuyển màu
-(occupied), số **Score** trên góc trái màn hình (từ `GameplayDebugHud`) tăng. Muốn
+(occupied), số **Score** trên góc trái màn hình (từ `GameplayHud`) tăng. Muốn
 kiểm tra chính xác qua code: `GameManagerBehaviour.Instance.Game.TryPlaceBlock(0, new
 Int2(0, 0))` từ Console/script tạm — trả về `true`,
 `Game.Grid.IsCellOccupied(new Int2(0,0)) == true`.
@@ -159,16 +169,18 @@ Kéo đủ block lấp đầy 1 hàng (8 ô cùng `y`). Kỳ vọng: hàng đó 
 Tương tự bước 19 nhưng lấp theo cột (`x` cố định, `y` chạy 0→7).
 
 **21. Kiểm tra score & combo**
-Theo dõi dòng **Score**/**Combo** trên `GameplayDebugHud` (góc trái màn hình) trong
+Theo dõi **Score**/**Combo** trên HUD góc trên bên trái (`GameplayHud`) trong
 lúc thực hiện bước 17–20. Kỳ vọng: điểm tăng đúng theo `ScoreRules`, combo tăng khi
 clear liên tiếp, reset về 0 khi có lượt không clear (công thức ở
 `ECONOMY_DESIGN.md`/`GAME_DESIGN.md`).
 
 **22. Kiểm tra game over & restart**
 Tiếp tục đặt block cho tới khi không còn shape nào trong khay đặt được vào chỗ trống
-nào của grid. Kỳ vọng: dòng **State** trên `GameplayDebugHud` chuyển thành
-`GameOver`, chữ "GAME OVER" và nút **Restart** xuất hiện. Bấm **Restart** — kỳ vọng:
-grid trống lại, Score về 0, State về `Playing`. (Qua code:
+nào của grid. Kỳ vọng: panel Game Over (`GameOverScreen`) hiện lên — nền tối phủ toàn
+màn hình, chữ "GAME OVER", điểm cuối + best score, nút **RESTART** và **MAIN MENU**.
+Bấm **RESTART** — kỳ vọng: panel biến mất, grid trống lại, Score về 0, State về
+`Playing`. Bấm **MAIN MENU** (ở lần Game Over khác) — kỳ vọng: quay lại scene
+MainMenu, Best Score hiển thị đúng giá trị cao nhất đã đạt. (Qua code:
 `GameManagerBehaviour.Instance.Restart()`.)
 
 ### Chạy test
@@ -181,10 +193,11 @@ Unity Test Runner**.
 
 **24. Chạy PlayMode tests**
 **Window ▸ General ▸ Test Runner ▸ tab PlayMode** ▸ chọn `GemGrid.Tests.PlayMode` ▸
-**Run All**. 2 test trong `BootFlowTests.cs` — **yêu cầu bước 10 (scenes trong Build
-Settings) đã làm xong**. Đây là test **hoàn toàn chưa chạy lần nào** — rủi ro lớn nhất
-là số frame `yield return null` giả định để chờ Boot→Gameplay chuyển scene có thể
-không khớp thực tế; nếu fail, chép log lại, đừng tự tăng số frame mà không báo.
+**Run All**. 3 test trong `BootFlowTests.cs` (Boot→MainMenu, Start Game→Gameplay ván
+mới, Restart) — **yêu cầu bước 10 (3 scene trong Build Settings đúng thứ tự) đã làm
+xong**. Đây là test **hoàn toàn chưa chạy lần nào** — rủi ro lớn nhất là số frame
+`yield return null` giả định để chờ chuyển scene có thể không khớp thực tế; nếu fail,
+chép log lại, đừng tự tăng số frame mà không báo.
 
 Chạy headless qua CLI (CI), sau khi đã có `Library/` từ lần mở Editor đầu tiên:
 ```bash

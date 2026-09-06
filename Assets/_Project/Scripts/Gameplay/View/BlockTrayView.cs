@@ -21,7 +21,17 @@ namespace GemGrid.Gameplay
         [SerializeField] private Vector3 slotOrigin = new Vector3(0f, -2f, 0f);
         [SerializeField] private float slotSpacing = 1.5f;
         [SerializeField] private float slotSize = 0.8f;
-        [SerializeField] private Color slotColor = new Color(1f, 0.65f, 0f); // orange
+
+        // Original gem-like palette (not copied from any commercial game); the same
+        // shape id always maps to the same color so blocks feel visually consistent.
+        private static readonly Color[] GemPalette =
+        {
+            new Color(0.65f, 0.40f, 0.95f), // violet
+            new Color(0.95f, 0.55f, 0.25f), // amber
+            new Color(0.35f, 0.70f, 0.95f), // sapphire
+            new Color(0.95f, 0.35f, 0.55f), // rose
+            new Color(0.45f, 0.90f, 0.55f), // jade
+        };
 
         private GameManagerBehaviour _gameManagerBehaviour;
         private readonly List<GameObject> _slotVisuals = new List<GameObject>();
@@ -66,7 +76,8 @@ namespace GemGrid.Gameplay
             var spawner = _gameManagerBehaviour.Game.Spawner;
             for (int i = 0; i < spawner.TraySize; i++)
             {
-                if (spawner.GetSlot(i).IsEmpty) continue;
+                var block = spawner.GetSlot(i);
+                if (block.IsEmpty) continue;
 
                 var slotGo = new GameObject($"TraySlot_{i}");
                 slotGo.transform.SetParent(transform, false);
@@ -75,7 +86,7 @@ namespace GemGrid.Gameplay
 
                 var renderer = slotGo.AddComponent<SpriteRenderer>();
                 renderer.sprite = PlaceholderSprite.White;
-                renderer.color = slotColor;
+                renderer.color = ColorForShape(block.Shape.Id);
 
                 var collider = slotGo.AddComponent<BoxCollider2D>();
                 collider.size = Vector2.one;
@@ -86,6 +97,13 @@ namespace GemGrid.Gameplay
 
                 _slotVisuals.Add(slotGo);
             }
+        }
+
+        private static Color ColorForShape(string shapeId)
+        {
+            if (string.IsNullOrEmpty(shapeId)) return GemPalette[0];
+            int index = (shapeId.GetHashCode() & int.MaxValue) % GemPalette.Length;
+            return GemPalette[index];
         }
     }
 }
