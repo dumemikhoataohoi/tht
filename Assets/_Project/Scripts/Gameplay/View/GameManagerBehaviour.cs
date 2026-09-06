@@ -32,6 +32,20 @@ namespace GemGrid.Gameplay
 
         public GameManager Game { get; private set; }
 
+        /// <summary>
+        /// The original, persistent Classic Mode GameManager built at Boot — kept
+        /// separately from <see cref="Game"/> so <see cref="Restart"/> can always get back
+        /// to real Classic Mode even after a Journey/Daily attempt has pointed
+        /// <see cref="Game"/> at a different, throwaway GameManager via <see cref="ReplaceGame"/>.
+        /// </summary>
+        private GameManager _classicGame;
+
+        /// <summary>Exposed so Journey/Daily Challenge attempts (see GameplaySessionStarter) can build their own GameManager reusing the same shapes/rules as Classic Mode.</summary>
+        public BlockShapeSet BlockShapeSet => blockShapeSet;
+
+        /// <summary>See <see cref="BlockShapeSet"/> above.</summary>
+        public GameplayConfig GameplayConfig => gameplayConfig;
+
         private void Awake()
         {
             if (Instance != null && Instance != this)
@@ -56,7 +70,8 @@ namespace GemGrid.Gameplay
             var random = new SystemRandomSource();
             var spawner = new BlockSpawner(blockShapeSet, random, traySize);
 
-            Game = new GameManager(grid, score, combo, spawner);
+            _classicGame = new GameManager(grid, score, combo, spawner);
+            Game = _classicGame;
         }
 
         private void Start()
@@ -69,9 +84,30 @@ namespace GemGrid.Gameplay
             if (Instance == this) Instance = null;
         }
 
+        /// <summary>
+        /// Classic Mode restart. Always (re-)points <see cref="Game"/> at the original
+        /// persistent <see cref="_classicGame"/> first — necessary because a prior
+        /// Journey/Daily attempt may have left <see cref="Game"/> pointed at a different,
+        /// throwaway GameManager via <see cref="ReplaceGame"/>.
+        /// </summary>
         public void Restart()
         {
+            Game = _classicGame;
             Game.RestartGame();
+        }
+
+        /// <summary>
+        /// Swaps in a different <see cref="GameManager"/> instance — used to point the
+        /// shared view layer (GridController, BlockTrayView, GameplayHud, GameOverScreen,
+        /// AudioHookListener, ...) at a Journey/Daily Challenge attempt's own GameManager
+        /// instead of the persistent Classic Mode one. Must be called from Awake() (see
+        /// GameplaySessionStarter) — those view components read <see cref="Game"/> in
+        /// their own Start(), and Unity guarantees every Awake() in a scene runs before
+        /// any Start() in that same scene.
+        /// </summary>
+        public void ReplaceGame(GameManager newGame)
+        {
+            Game = newGame ?? throw new System.ArgumentNullException(nameof(newGame));
         }
     }
 }

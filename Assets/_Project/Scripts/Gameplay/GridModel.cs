@@ -75,6 +75,33 @@ namespace GemGrid.Gameplay
             GridChanged?.Invoke();
         }
 
+        public bool ClearCell(Int2 cell)
+        {
+            if (!IsInside(cell)) return false;
+            if (!_occupied[cell.X, cell.Y]) return false;
+
+            _occupied[cell.X, cell.Y] = false;
+            GridChanged?.Invoke();
+            return true;
+        }
+
+        public bool[,] SnapshotOccupancy()
+        {
+            var copy = new bool[Width, Height];
+            Array.Copy(_occupied, copy, _occupied.Length);
+            return copy;
+        }
+
+        public void RestoreOccupancy(bool[,] occupancy)
+        {
+            if (occupancy == null) throw new ArgumentNullException(nameof(occupancy));
+            if (occupancy.GetLength(0) != Width || occupancy.GetLength(1) != Height)
+                throw new ArgumentException("Occupancy dimensions must match the grid.", nameof(occupancy));
+
+            Array.Copy(occupancy, _occupied, _occupied.Length);
+            GridChanged?.Invoke();
+        }
+
         private LineClearResult ClearFullLines()
         {
             var fullRows = new List<int>();

@@ -1,0 +1,16 @@
+{
+    "name": "GemGrid.Economy",
+    "rootNamespace": "GemGrid.Economy",
+    "references": [
+        "GemGrid.Core"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

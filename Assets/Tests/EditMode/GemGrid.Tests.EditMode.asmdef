@@ -5,6 +5,10 @@
         "GemGrid.Core",
         "GemGrid.Configuration",
         "GemGrid.Gameplay",
+        "GemGrid.Journey",
+        "GemGrid.Economy",
+        "GemGrid.PowerUps",
+        "GemGrid.SaveSystem",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],

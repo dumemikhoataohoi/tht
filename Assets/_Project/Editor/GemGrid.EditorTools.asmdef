@@ -7,7 +7,11 @@
         "GemGrid.Gameplay",
         "GemGrid.Audio",
         "GemGrid.Bootstrap",
-        "GemGrid.UI"
+        "GemGrid.UI",
+        "GemGrid.Journey",
+        "GemGrid.Economy",
+        "GemGrid.PowerUps",
+        "GemGrid.SaveSystem"
     ],
     "includePlatforms": [
         "Editor"

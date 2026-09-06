@@ -72,6 +72,7 @@ namespace UnityEngine.UI
     public sealed class Button : Component
     {
         public UnityEvent onClick { get; } = new UnityEvent();
+        public bool interactable { get; set; } = true;
     }
 }
 

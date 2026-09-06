@@ -1,0 +1,19 @@
+{
+    "name": "GemGrid.PowerUps",
+    "rootNamespace": "GemGrid.PowerUps",
+    "references": [
+        "GemGrid.Core",
+        "GemGrid.Configuration",
+        "GemGrid.Gameplay",
+        "GemGrid.Economy"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

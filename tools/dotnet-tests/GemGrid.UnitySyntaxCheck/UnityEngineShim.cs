@@ -267,6 +267,8 @@ namespace UnityEngine
     {
         public static int GetInt(string key, int defaultValue = 0) => defaultValue;
         public static void SetInt(string key, int value) { }
+        public static string GetString(string key, string defaultValue = "") => defaultValue;
+        public static void SetString(string key, string value) { }
         public static void Save() { }
     }
 

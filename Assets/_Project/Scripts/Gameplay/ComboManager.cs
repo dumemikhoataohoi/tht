@@ -43,5 +43,13 @@ namespace GemGrid.Gameplay
             BestCombo = 0;
             ComboChanged?.Invoke(CurrentCombo);
         }
+
+        /// <summary>Restores values captured before a move, for the single-step Undo power-up. Internal — only <see cref="GameManager"/> (same assembly) needs it.</summary>
+        internal void RestoreState(int currentCombo, int bestCombo)
+        {
+            CurrentCombo = currentCombo;
+            BestCombo = bestCombo;
+            ComboChanged?.Invoke(CurrentCombo);
+        }
     }
 }

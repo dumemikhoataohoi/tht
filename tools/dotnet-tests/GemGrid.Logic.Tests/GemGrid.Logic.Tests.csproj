@@ -54,7 +54,52 @@
     <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\ScoreManager.cs" Link="Production\Gameplay\ScoreManager.cs" />
     <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\ComboManager.cs" Link="Production\Gameplay\ComboManager.cs" />
     <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\GameplayEvents.cs" Link="Production\Gameplay\GameplayEvents.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\GameManagerSnapshot.cs" Link="Production\Gameplay\GameManagerSnapshot.cs" />
     <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\GameManager.cs" Link="Production\Gameplay\GameManager.cs" />
+
+    <!-- V2 meta-progression modules (GAME_DESIGN_V2.md) -->
+    <Compile Include="..\..\..\Assets\_Project\Scripts\SaveSystem\SaveData.cs" Link="Production\SaveSystem\SaveData.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\SaveSystem\ISaveStore.cs" Link="Production\SaveSystem\ISaveStore.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\SaveSystem\InMemorySaveStore.cs" Link="Production\SaveSystem\InMemorySaveStore.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\SaveSystem\SaveSerializer.cs" Link="Production\SaveSystem\SaveSerializer.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\SaveSystem\SaveService.cs" Link="Production\SaveSystem\SaveService.cs" />
+
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Economy\Wallet.cs" Link="Production\Economy\Wallet.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Economy\IClock.cs" Link="Production\Economy\IClock.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Economy\SystemClock.cs" Link="Production\Economy\SystemClock.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Economy\EnergyConfig.cs" Link="Production\Economy\EnergyConfig.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Economy\EnergyService.cs" Link="Production\Economy\EnergyService.cs" />
+
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\ObjectiveType.cs" Link="Production\Journey\ObjectiveType.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\ObjectiveDefinition.cs" Link="Production\Journey\ObjectiveDefinition.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\ObjectiveProgress.cs" Link="Production\Journey\ObjectiveProgress.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\ObjectiveTracker.cs" Link="Production\Journey\ObjectiveTracker.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\LevelDefinition.cs" Link="Production\Journey\LevelDefinition.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\StarCalculator.cs" Link="Production\Journey\StarCalculator.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\DifficultyCurveConfig.cs" Link="Production\Journey\DifficultyCurveConfig.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\ChapterBuilder.cs" Link="Production\Journey\ChapterBuilder.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\LevelSeeder.cs" Link="Production\Journey\LevelSeeder.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\BiasedBlockShapeProvider.cs" Link="Production\Journey\BiasedBlockShapeProvider.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\JourneyProgress.cs" Link="Production\Journey\JourneyProgress.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\RewardConfig.cs" Link="Production\Journey\RewardConfig.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\LevelRewardCalculator.cs" Link="Production\Journey\LevelRewardCalculator.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\ChapterRewardCalculator.cs" Link="Production\Journey\ChapterRewardCalculator.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\PlayerRank.cs" Link="Production\Journey\PlayerRank.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\JourneyLevelSession.cs" Link="Production\Journey\JourneyLevelSession.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\AchievementId.cs" Link="Production\Journey\AchievementId.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\AchievementTracker.cs" Link="Production\Journey\AchievementTracker.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\DailyChallengeSeed.cs" Link="Production\Journey\DailyChallengeSeed.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Journey\DailyChallengeProgress.cs" Link="Production\Journey\DailyChallengeProgress.cs" />
+
+    <Compile Include="..\..\..\Assets\_Project\Scripts\PowerUps\PowerUpId.cs" Link="Production\PowerUps\PowerUpId.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\PowerUps\PowerUpDefinition.cs" Link="Production\PowerUps\PowerUpDefinition.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\PowerUps\PowerUpCatalog.cs" Link="Production\PowerUps\PowerUpCatalog.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\PowerUps\PowerUpInventory.cs" Link="Production\PowerUps\PowerUpInventory.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\PowerUps\PowerUpLevelUsage.cs" Link="Production\PowerUps\PowerUpLevelUsage.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\PowerUps\HintFinder.cs" Link="Production\PowerUps\HintFinder.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\PowerUps\HammerAction.cs" Link="Production\PowerUps\HammerAction.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\PowerUps\ShuffleAction.cs" Link="Production\PowerUps\ShuffleAction.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\PowerUps\UndoAction.cs" Link="Production\PowerUps\UndoAction.cs" />
   </ItemGroup>
 
   <!-- Tests (identical files used by Unity's EditMode Test Runner) -->
@@ -69,6 +114,20 @@
     <Compile Include="..\..\..\Assets\Tests\EditMode\GameOverCheckerTests.cs" Link="Tests\GameOverCheckerTests.cs" />
     <Compile Include="..\..\..\Assets\Tests\EditMode\BlockSpawnerTests.cs" Link="Tests\BlockSpawnerTests.cs" />
     <Compile Include="..\..\..\Assets\Tests\EditMode\GameManagerFlowTests.cs" Link="Tests\GameManagerFlowTests.cs" />
+
+    <!-- V2 meta-progression tests -->
+    <Compile Include="..\..\..\Assets\Tests\EditMode\V2\GridModelUndoAndHammerTests.cs" Link="Tests\V2\GridModelUndoAndHammerTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\V2\GameManagerUndoAndContinueTests.cs" Link="Tests\V2\GameManagerUndoAndContinueTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\V2\SaveSystemTests.cs" Link="Tests\V2\SaveSystemTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\V2\EconomyTests.cs" Link="Tests\V2\EconomyTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\V2\ObjectiveAndStarTests.cs" Link="Tests\V2\ObjectiveAndStarTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\V2\DifficultyCurveAndChapterBuilderTests.cs" Link="Tests\V2\DifficultyCurveAndChapterBuilderTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\V2\BiasedBlockShapeProviderTests.cs" Link="Tests\V2\BiasedBlockShapeProviderTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\V2\JourneyProgressTests.cs" Link="Tests\V2\JourneyProgressTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\V2\RewardAndRankTests.cs" Link="Tests\V2\RewardAndRankTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\V2\JourneyLevelSessionTests.cs" Link="Tests\V2\JourneyLevelSessionTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\V2\AchievementAndDailyChallengeTests.cs" Link="Tests\V2\AchievementAndDailyChallengeTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\V2\PowerUpTests.cs" Link="Tests\V2\PowerUpTests.cs" />
   </ItemGroup>
 
 </Project>

@@ -2,10 +2,13 @@ using GemGrid.Audio;
 using GemGrid.Bootstrap;
 using GemGrid.Configuration;
 using GemGrid.Gameplay;
+using GemGrid.Journey;
+using GemGrid.UI;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace GemGrid.EditorTools
@@ -32,6 +35,7 @@ namespace GemGrid.EditorTools
         internal const string BootScenePath = ScenesFolder + "/Boot.unity";
         internal const string MainMenuScenePath = ScenesFolder + "/MainMenu.unity";
         internal const string GameplayScenePath = ScenesFolder + "/Gameplay.unity";
+        internal const string JourneyMapScenePath = ScenesFolder + "/JourneyMap.unity";
 
         private static readonly Vector2 ReferenceResolution = new Vector2(1080, 1920);
         private static readonly Color BackgroundColor = GemPalette.Background;
@@ -64,6 +68,7 @@ namespace GemGrid.EditorTools
             serializedGameManager.ApplyModifiedPropertiesWithoutUndo();
 
             bootstrapGo.AddComponent<BootLoader>();
+            bootstrapGo.AddComponent<MetaProgressionService>();
 
             EnsureScenesFolder();
             EditorSceneManager.SaveScene(scene, BootScenePath);
@@ -103,18 +108,88 @@ namespace GemGrid.EditorTools
             AnchorCenter(bestScoreText.rectTransform, new Vector2(0f, 60f), new Vector2(600f, 80f));
 
             var startButton = CreateButton(safeArea, "StartGameButton", "START GAME", AccentColor);
-            AnchorCenter(startButton.GetComponent<RectTransform>(), new Vector2(0f, -220f), new Vector2(560f, 160f));
+            AnchorCenter(startButton.GetComponent<RectTransform>(), new Vector2(0f, -200f), new Vector2(560f, 130f));
+
+            var journeyButton = CreateButton(safeArea, "JourneyButton", "JOURNEY", GemPalette.AccentWarm);
+            AnchorCenter(journeyButton.GetComponent<RectTransform>(), new Vector2(0f, -350f), new Vector2(560f, 120f));
+
+            var dailyButton = CreateButton(safeArea, "DailyChallengeButton", "DAILY CHALLENGE", GemPalette.Neutral);
+            AnchorCenter(dailyButton.GetComponent<RectTransform>(), new Vector2(0f, -490f), new Vector2(560f, 110f));
 
             var controllerGo = new GameObject("MainMenuController");
             var controller = controllerGo.AddComponent<GemGrid.UI.MainMenuController>();
             var serializedController = new SerializedObject(controller);
             serializedController.FindProperty("bestScoreText").objectReferenceValue = bestScoreText;
             serializedController.FindProperty("startGameButton").objectReferenceValue = startButton;
+            serializedController.FindProperty("journeyButton").objectReferenceValue = journeyButton;
+            serializedController.FindProperty("dailyChallengeButton").objectReferenceValue = dailyButton;
             serializedController.ApplyModifiedPropertiesWithoutUndo();
 
             EnsureScenesFolder();
             EditorSceneManager.SaveScene(scene, MainMenuScenePath);
             Debug.Log($"[GemGrid] Created {MainMenuScenePath}.");
+            return true;
+        }
+
+        /// <summary>
+        /// Creates JourneyMap.unity if it doesn't already exist: a 3x5 grid of the 15
+        /// Chapter 1 level tiles (see <see cref="GemGrid.UI.JourneyLevelButtonView"/>) plus
+        /// a Back button. Only Chapter 1 is exposed in this milestone — later chapters are
+        /// already fully generatable via ChapterBuilder, just not yet wired into this
+        /// scene's UI (a follow-up, not a design limitation).
+        /// </summary>
+        internal static bool EnsureJourneyMapScene()
+        {
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(JourneyMapScenePath) != null)
+                return true;
+
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            var cameraGo = new GameObject("Main Camera");
+            var camera = cameraGo.AddComponent<Camera>();
+            camera.orthographic = true;
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = BackgroundColor;
+            cameraGo.tag = "MainCamera";
+            cameraGo.AddComponent<AudioListener>();
+
+            EnsureEventSystem();
+            var canvas = CreateCanvas("JourneyMapCanvas");
+            CreateFullScreenBackground(canvas.transform, BackgroundColor);
+            var safeArea = CreateSafeAreaContainer(canvas.transform);
+
+            var title = CreateText(safeArea, "JourneyTitle", "JOURNEY — CHAPTER 1", 56, TextColor);
+            AnchorTopCenter(title.rectTransform, new Vector2(0f, -110f), new Vector2(940f, 90f));
+
+            const int columns = 3;
+            float[] columnX = { -340f, 0f, 340f };
+            float[] rowY = { 600f, 400f, 200f, 0f, -200f };
+
+            for (int i = 0; i < LevelDefinition.LevelsPerChapter; i++)
+            {
+                int row = i / columns;
+                int col = i % columns;
+
+                var button = CreateButton(safeArea, $"Level{i + 1}Button", string.Empty, AccentColor);
+                AnchorCenter(button.GetComponent<RectTransform>(), new Vector2(columnX[col], rowY[row]), new Vector2(280f, 160f));
+
+                var numberText = CreateText(button.transform, "LevelNumber", (i + 1).ToString(), 44, TextColor);
+                AnchorCenter(numberText.rectTransform, new Vector2(0f, 25f), new Vector2(240f, 60f));
+
+                var statusText = CreateText(button.transform, "LevelStatus", "PLAY", 24, GemPalette.TextSecondary);
+                AnchorCenter(statusText.rectTransform, new Vector2(0f, -35f), new Vector2(240f, 40f));
+
+                var buttonView = button.gameObject.AddComponent<GemGrid.UI.JourneyLevelButtonView>();
+                buttonView.Initialize(i, statusText);
+            }
+
+            var backButton = CreateButton(safeArea, "JourneyBackButton", "BACK", GemPalette.Neutral);
+            AnchorBottomCenter(backButton.GetComponent<RectTransform>(), new Vector2(0f, 50f), new Vector2(400f, 110f));
+            backButton.onClick.AddListener(() => SceneManager.LoadScene("MainMenu"));
+
+            EnsureScenesFolder();
+            EditorSceneManager.SaveScene(scene, JourneyMapScenePath);
+            Debug.Log($"[GemGrid] Created {JourneyMapScenePath}.");
             return true;
         }
 
@@ -165,6 +240,8 @@ namespace GemGrid.EditorTools
             var canvas = CreateCanvas("GameplayCanvas");
             var safeArea = CreateSafeAreaContainer(canvas.transform);
             BuildGameplayHud(safeArea);
+            BuildJourneyHud(safeArea);
+            BuildPowerUpBar(safeArea, placementPreview);
             BuildGameOverPanel(canvas.transform);
             BuildTutorialOverlay(canvas.transform);
 
@@ -219,6 +296,68 @@ namespace GemGrid.EditorTools
             serializedHud.ApplyModifiedPropertiesWithoutUndo();
         }
 
+        /// <summary>
+        /// Journey-only strip (objective + progress, Gem Energy) — see
+        /// <see cref="GemGrid.UI.JourneyHud"/>. Hides itself in Classic Mode. Placed just
+        /// below the score/best/combo HUD bar so it never overlaps the board/tray below.
+        /// </summary>
+        private static void BuildJourneyHud(Transform canvasTransform)
+        {
+            var panelGo = new GameObject("JourneyHudPanel");
+            panelGo.transform.SetParent(canvasTransform, false);
+            var panelRect = panelGo.AddComponent<RectTransform>();
+            AnchorTopCenter(panelRect, new Vector2(0f, -190f), new Vector2(1000f, 60f));
+            var panelImage = panelGo.AddComponent<Image>();
+            panelImage.color = new Color(GemPalette.Surface.r, GemPalette.Surface.g, GemPalette.Surface.b, 0.75f);
+
+            var objectiveText = CreateText(panelGo.transform, "ObjectiveText", string.Empty, 30, TextColor);
+            AnchorTopLeft(objectiveText.rectTransform, new Vector2(20f, -5f), new Vector2(700f, 50f));
+            objectiveText.alignment = TextAnchor.MiddleLeft;
+
+            var energyText = CreateText(panelGo.transform, "EnergyText", string.Empty, 30, GemPalette.Accent);
+            AnchorTopLeft(energyText.rectTransform, new Vector2(740f, -5f), new Vector2(240f, 50f));
+            energyText.alignment = TextAnchor.MiddleRight;
+
+            var hudGo = new GameObject("JourneyHud");
+            var hud = hudGo.AddComponent<GemGrid.UI.JourneyHud>();
+            var serializedHud = new SerializedObject(hud);
+            serializedHud.FindProperty("panelRoot").objectReferenceValue = panelGo;
+            serializedHud.FindProperty("objectiveText").objectReferenceValue = objectiveText;
+            serializedHud.FindProperty("energyText").objectReferenceValue = energyText;
+            serializedHud.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>Hint/Hammer/Shuffle/Undo buttons — see <see cref="GemGrid.UI.PowerUpBar"/>. Row anchored to the bottom of the screen, below the board/tray.</summary>
+        private static void BuildPowerUpBar(Transform canvasTransform, PlacementPreviewController placementPreview)
+        {
+            var barGo = new GameObject("PowerUpBar");
+            barGo.transform.SetParent(canvasTransform, false);
+            var barRect = barGo.AddComponent<RectTransform>();
+            AnchorBottomCenter(barRect, new Vector2(0f, 30f), new Vector2(1000f, 130f));
+
+            var hintButton = CreatePowerUpButton(barRect, "HintButton", "HINT", new Vector2(-375f, 0f));
+            var hammerButton = CreatePowerUpButton(barRect, "HammerButton", "HAMMER", new Vector2(-125f, 0f));
+            var shuffleButton = CreatePowerUpButton(barRect, "ShuffleButton", "SHUFFLE", new Vector2(125f, 0f));
+            var undoButton = CreatePowerUpButton(barRect, "UndoButton", "UNDO", new Vector2(375f, 0f));
+
+            var controllerGo = new GameObject("PowerUpBarController");
+            var controller = controllerGo.AddComponent<GemGrid.UI.PowerUpBar>();
+            var serializedController = new SerializedObject(controller);
+            serializedController.FindProperty("placementPreview").objectReferenceValue = placementPreview;
+            serializedController.FindProperty("hintButton").objectReferenceValue = hintButton;
+            serializedController.FindProperty("hammerButton").objectReferenceValue = hammerButton;
+            serializedController.FindProperty("shuffleButton").objectReferenceValue = shuffleButton;
+            serializedController.FindProperty("undoButton").objectReferenceValue = undoButton;
+            serializedController.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static Button CreatePowerUpButton(Transform parent, string name, string label, Vector2 anchoredPosition)
+        {
+            var button = CreateButton(parent, name, label, GemPalette.SurfaceAlt);
+            AnchorCenter(button.GetComponent<RectTransform>(), anchoredPosition, new Vector2(220f, 120f));
+            return button;
+        }
+
         private static void BuildGameOverPanel(Transform canvasTransform)
         {
             var panelGo = new GameObject("GameOverPanel");
@@ -241,39 +380,58 @@ namespace GemGrid.EditorTools
             var cardGo = new GameObject("GameOverCard");
             cardGo.transform.SetParent(safeArea, false);
             var cardRect = cardGo.AddComponent<RectTransform>();
-            AnchorCenter(cardRect, new Vector2(0f, 10f), new Vector2(860f, 1000f));
+            AnchorCenter(cardRect, new Vector2(0f, -10f), new Vector2(860f, 840f));
             var cardImage = cardGo.AddComponent<Image>();
             cardImage.color = GemPalette.Surface;
 
             var title = CreateText(safeArea, "GameOverTitle", "GAME OVER", 72, TextColor);
-            AnchorCenter(title.rectTransform, new Vector2(0f, 300f), new Vector2(760f, 100f));
+            AnchorCenter(title.rectTransform, new Vector2(0f, 300f), new Vector2(760f, 90f));
 
-            // Explains WHY the game ended (the only Game Over trigger is "no valid move
-            // left" — GameOverChecker) instead of leaving the player to guess.
+            // Explains WHY the game ended (Classic) or shows the Journey win/lose result
+            // + stars (Journey/Daily) — set dynamically by GameOverScreen.cs.
             var reasonText = CreateText(safeArea, "GameOverReasonText", "No more valid moves.", 34, GemPalette.TextSecondary);
-            AnchorCenter(reasonText.rectTransform, new Vector2(0f, 210f), new Vector2(700f, 50f));
+            AnchorCenter(reasonText.rectTransform, new Vector2(0f, 215f), new Vector2(700f, 50f));
 
             var finalScoreText = CreateText(safeArea, "FinalScoreText", "Score 0", 48, TextColor);
-            AnchorCenter(finalScoreText.rectTransform, new Vector2(0f, 130f), new Vector2(600f, 65f));
+            AnchorCenter(finalScoreText.rectTransform, new Vector2(0f, 145f), new Vector2(600f, 55f));
 
             var bestScoreText = CreateText(safeArea, "BestScoreText", "Best 0", 36, TextColor);
-            AnchorCenter(bestScoreText.rectTransform, new Vector2(0f, 60f), new Vector2(600f, 55f));
+            AnchorCenter(bestScoreText.rectTransform, new Vector2(0f, 85f), new Vector2(600f, 45f));
+
+            // Journey-only reward summary ("+40 Coins  +10 XP") — hidden in Classic Mode.
+            var rewardText = CreateText(safeArea, "JourneyRewardText", string.Empty, 30, GemPalette.TextCombo);
+            AnchorCenter(rewardText.rectTransform, new Vector2(0f, 30f), new Vector2(600f, 40f));
+
+            // Journey-only: Continue (shown on a loss, while still available) and Next
+            // Level (shown on a win) share the same slot — never both at once.
+            var continueButton = CreateButton(safeArea, "ContinueButton", "CONTINUE", GemPalette.AccentWarm);
+            AnchorCenter(continueButton.GetComponent<RectTransform>(), new Vector2(0f, -55f), new Vector2(500f, 110f));
+            continueButton.gameObject.SetActive(false);
+
+            var nextLevelButton = CreateButton(safeArea, "NextLevelButton", "NEXT LEVEL", GemPalette.AccentWarm);
+            AnchorCenter(nextLevelButton.GetComponent<RectTransform>(), new Vector2(0f, -55f), new Vector2(500f, 110f));
+            nextLevelButton.gameObject.SetActive(false);
 
             var restartButton = CreateButton(safeArea, "RestartButton", "RESTART", AccentColor);
-            AnchorCenter(restartButton.GetComponent<RectTransform>(), new Vector2(0f, -70f), new Vector2(500f, 140f));
+            AnchorCenter(restartButton.GetComponent<RectTransform>(), new Vector2(0f, -190f), new Vector2(500f, 100f));
 
             var mainMenuButton = CreateButton(safeArea, "MainMenuButton", "MAIN MENU", GemPalette.Neutral);
-            AnchorCenter(mainMenuButton.GetComponent<RectTransform>(), new Vector2(0f, -245f), new Vector2(500f, 115f));
+            AnchorCenter(mainMenuButton.GetComponent<RectTransform>(), new Vector2(0f, -330f), new Vector2(500f, 90f));
 
             var screenGo = new GameObject("GameOverScreen");
             var screen = screenGo.AddComponent<GameOverScreen>();
             var serializedScreen = new SerializedObject(screen);
             serializedScreen.FindProperty("panelRoot").objectReferenceValue = panelGo;
             serializedScreen.FindProperty("panelCanvasGroup").objectReferenceValue = panelCanvasGroup;
+            serializedScreen.FindProperty("titleText").objectReferenceValue = title;
+            serializedScreen.FindProperty("reasonOrResultText").objectReferenceValue = reasonText;
             serializedScreen.FindProperty("finalScoreText").objectReferenceValue = finalScoreText;
             serializedScreen.FindProperty("bestScoreText").objectReferenceValue = bestScoreText;
+            serializedScreen.FindProperty("rewardText").objectReferenceValue = rewardText;
             serializedScreen.FindProperty("restartButton").objectReferenceValue = restartButton;
             serializedScreen.FindProperty("mainMenuButton").objectReferenceValue = mainMenuButton;
+            serializedScreen.FindProperty("continueButton").objectReferenceValue = continueButton;
+            serializedScreen.FindProperty("nextLevelButton").objectReferenceValue = nextLevelButton;
             serializedScreen.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -449,6 +607,15 @@ namespace GemGrid.EditorTools
             rect.anchoredPosition = anchoredPosition;
         }
 
+        private static void AnchorBottomCenter(RectTransform rect, Vector2 anchoredPosition, Vector2 size)
+        {
+            rect.anchorMin = new Vector2(0.5f, 0f);
+            rect.anchorMax = new Vector2(0.5f, 0f);
+            rect.pivot = new Vector2(0.5f, 0f);
+            rect.sizeDelta = size;
+            rect.anchoredPosition = anchoredPosition;
+        }
+
         // ---- Menu items (manual/explicit re-runs; auto-setup covers the normal path) ----
 
         [MenuItem("GemGrid/Setup/3. Create Boot Scene")]
@@ -486,12 +653,25 @@ namespace GemGrid.EditorTools
             Debug.Log("Add it to File ▸ Build Settings ▸ Scenes In Build (after Boot + MainMenu) — see UNITY_SETUP.md.");
         }
 
-        [MenuItem("GemGrid/Setup/6. Create Boot, Main Menu And Gameplay Scenes")]
+        [MenuItem("GemGrid/Setup/6. Create Journey Map Scene")]
+        public static void CreateJourneyMapScene()
+        {
+            if (AssetDatabase.LoadAssetAtPath<UnityEngine.Object>(JourneyMapScenePath) != null)
+            {
+                Debug.LogWarning($"{JourneyMapScenePath} already exists — not overwriting. Delete it first if you want to regenerate.");
+                return;
+            }
+            EnsureJourneyMapScene();
+            Debug.Log("Add it to File ▸ Build Settings ▸ Scenes In Build — see UNITY_SETUP.md.");
+        }
+
+        [MenuItem("GemGrid/Setup/7. Create Boot, Main Menu, Gameplay And Journey Map Scenes")]
         public static void CreateAllScenes()
         {
             CreateBootScene();
             CreateMainMenuScene();
             CreateGameplayScene();
+            CreateJourneyMapScene();
         }
 
         private static void EnsureScenesFolder()

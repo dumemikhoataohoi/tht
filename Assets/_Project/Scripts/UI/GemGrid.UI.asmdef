@@ -3,7 +3,12 @@
     "rootNamespace": "GemGrid.UI",
     "references": [
         "GemGrid.Core",
-        "GemGrid.Gameplay"
+        "GemGrid.Configuration",
+        "GemGrid.Gameplay",
+        "GemGrid.Journey",
+        "GemGrid.Economy",
+        "GemGrid.PowerUps",
+        "GemGrid.SaveSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

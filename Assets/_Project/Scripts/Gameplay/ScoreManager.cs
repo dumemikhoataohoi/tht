@@ -32,6 +32,14 @@ namespace GemGrid.Gameplay
             ScoreChanged?.Invoke(TotalScore);
         }
 
+        /// <summary>Restores a value captured before a move, for the single-step Undo power-up. Internal — only <see cref="GameManager"/> (same assembly) needs it.</summary>
+        internal void RestoreTotalScore(int value)
+        {
+            if (TotalScore == value) return;
+            TotalScore = value;
+            ScoreChanged?.Invoke(TotalScore);
+        }
+
         private void AddScore(int amount)
         {
             if (amount == 0) return;

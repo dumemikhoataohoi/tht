@@ -61,6 +61,17 @@ namespace GemGrid.Gameplay
             return _tray[index];
         }
 
+        /// <summary>Copies the current tray for the single-step Undo power-up. Internal — only <see cref="GameManager"/> (same assembly) needs it.</summary>
+        internal BlockData[] SnapshotTray() => (BlockData[])_tray.Clone();
+
+        /// <summary>Restores a tray captured by <see cref="SnapshotTray"/>. Internal — see above.</summary>
+        internal void RestoreTray(BlockData[] snapshot)
+        {
+            if (snapshot == null || snapshot.Length != _tray.Length)
+                throw new ArgumentException("Snapshot must match the tray size.", nameof(snapshot));
+            Array.Copy(snapshot, _tray, _tray.Length);
+        }
+
         private void ValidateIndex(int index)
         {
             if (index < 0 || index >= _tray.Length)

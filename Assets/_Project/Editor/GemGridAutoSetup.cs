@@ -41,6 +41,7 @@ namespace GemGrid.EditorTools
                 GemGridSceneSetup.EnsureBootScene();
                 GemGridSceneSetup.EnsureMainMenuScene();
                 GemGridSceneSetup.EnsureGameplayScene();
+                GemGridSceneSetup.EnsureJourneyMapScene();
                 EnsureBuildSettingsScenes();
                 EnsurePlayModeStartScene();
             }
@@ -58,6 +59,7 @@ namespace GemGrid.EditorTools
                 GemGridSceneSetup.BootScenePath,
                 GemGridSceneSetup.MainMenuScenePath,
                 GemGridSceneSetup.GameplayScenePath,
+                GemGridSceneSetup.JourneyMapScenePath,
             };
 
             var current = EditorBuildSettings.scenes;
@@ -75,7 +77,7 @@ namespace GemGrid.EditorTools
             newScenes.AddRange(extras);
 
             EditorBuildSettings.scenes = newScenes.ToArray();
-            Debug.Log("[GemGrid] Set Build Settings scene order: Boot, MainMenu, Gameplay.");
+            Debug.Log("[GemGrid] Set Build Settings scene order: Boot, MainMenu, Gameplay, JourneyMap.");
         }
 
         /// <summary>
