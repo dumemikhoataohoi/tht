@@ -30,8 +30,10 @@ Assets/_Project/Scripts/IAP/             -> GemGrid.IAP.asmdef           (deps: 
 Assets/_Project/Scripts/Analytics/       -> GemGrid.Analytics.asmdef     (deps: Core)
 Assets/_Project/Scripts/Audio/           -> GemGrid.Audio.asmdef         (deps: Core, Gameplay — AudioHookListener subscribes to GameManagerBehaviour's events)
 Assets/_Project/Scripts/UI/              -> GemGrid.UI.asmdef            (deps: Core, Gameplay, Economy)
-Assets/_Project/Scripts/Bootstrap/       -> GemGrid.Bootstrap.asmdef     (deps: tất cả — composition root)
+Assets/_Project/Scripts/Bootstrap/       -> GemGrid.Bootstrap.asmdef     (deps: (none) — chỉ gọi SceneManager.LoadScene theo tên scene, không coupling ngược tới Gameplay)
+Assets/_Project/Editor/                  -> GemGrid.EditorTools.asmdef   (deps: Core, Configuration, Gameplay, Audio, Bootstrap — includePlatforms: Editor)
 Assets/Tests/EditMode/                   -> GemGrid.Tests.EditMode.asmdef (deps: tương ứng module test)
+Assets/Tests/PlayMode/                   -> GemGrid.Tests.PlayMode.asmdef (deps: Core, Configuration, Gameplay, Bootstrap)
 ```
 
 Quy tắc: **Gameplay không được reference UI, Ads, IAP, Analytics**. UI chỉ gọi vào
@@ -40,14 +42,42 @@ Gameplay/Economy qua interface + event, không ngược lại.
 > **Cập nhật sau M1**: các MonoBehaviour/ScriptableObject adapter (cần UnityEngine)
 > nằm cạnh logic thuần trong cùng assembly để giữ đúng ranh giới module, nhưng được
 > tách vào file/thư mục riêng để không lẫn với phần đã unit-test được:
-> `Assets/_Project/Scripts/Gameplay/View/` chứa `GameManagerBehaviour` (composition
-> root của scene gameplay — không phải `Bootstrap/`, vốn dành cho entry point cấp
-> app ở milestone sau), `GridController`, `BlockDragController`,
-> `HapticHookListener`, `GameplayAnimationHooks`. Toàn bộ phần còn lại của
+> `Assets/_Project/Scripts/Gameplay/View/` chứa `GameManagerBehaviour`,
+> `GridController`, `BlockDragController`, `HapticHookListener`,
+> `GameplayAnimationHooks`, `UnityPointerInputSource`. Toàn bộ phần còn lại của
 > `Gameplay.asmdef` (`GridModel`, `GameManager`, `ScoreManager`, `ComboManager`,
 > `BlockSpawner`, `GameOverChecker`, `BlockPlacement`...) là C# thuần, không
 > `using UnityEngine`, để có thể biên dịch + chạy unit test cả trong lẫn ngoài Unity
 > Editor (xem README_M1.md).
+>
+> **Cập nhật M1.5 — composition root chuyển từ scene sang app-level**:
+> `GameManagerBehaviour` giờ là singleton (`Instance`) sống trên một GameObject trong
+> scene **Boot**, dùng `DontDestroyOnLoad` để tồn tại xuyên suốt khi chuyển sang scene
+> **Gameplay** (`Assets/_Project/Scripts/Bootstrap/BootLoader.cs` thực hiện chuyển
+> scene sau khi Boot khởi tạo xong). `GridController`/`BlockDragController`/các hook
+> listener trong scene Gameplay không còn dùng `[RequireComponent(typeof(GameManagerBehaviour))]`
+> + `GetComponent` (vì không còn cùng GameObject/scene với nó nữa) — chúng đọc
+> `GameManagerBehaviour.Instance` trực tiếp. `GameManagerBehaviour` vẫn nằm trong
+> `Gameplay.asmdef` (không chuyển sang `Bootstrap.asmdef`) để tránh circular reference
+> (Bootstrap sẽ cần Gameplay để tạo `GameManager`, nếu Gameplay/View cũng cần
+> reference ngược lại Bootstrap thì asmdef graph bị vòng — Unity không cho phép).
+> `Bootstrap.asmdef` vì vậy chỉ chứa `BootLoader` (không phụ thuộc gì ngoài
+> `UnityEngine.SceneManagement`), giữ đúng nguyên tắc ở trên.
+>
+> **Input abstraction (M1.5)**: `BlockDragController` không gọi `UnityEngine.Input`
+> trực tiếp nữa — nó phụ thuộc `Core.IPointerInputSource` (interface thuần, không
+> UnityEngine), với `UnityPointerInputSource` (Gameplay/View) là implementation mặc
+> định dùng Input Manager cổ điển của Unity (đã hỗ trợ sẵn touch thật trên Android qua
+> `Input.touchCount`/`GetTouch`, không cần thêm package Input System mới — giữ đúng
+> tiêu chí "ít dependency nhất"). Cho phép thay input source khi test/đổi backend mà
+> không sửa logic kéo-thả.
+>
+> **Editor tooling (M1.5)**: `Assets/_Project/Editor/GemGridAssetSetup.cs` và
+> `GemGridSceneSetup.cs` tạo data asset (`BlockShapeSet`, `GameplayConfig`) và scene
+> (`Boot.unity`, `Gameplay.unity`) bằng chính API của Unity
+> (`ScriptableObject.CreateInstance`, `AssetDatabase.CreateAsset`,
+> `EditorSceneManager.NewScene/SaveScene`) qua menu `GemGrid ▸ Setup ▸ ...` — không
+> hand-write YAML (xem README_M1.md §5 cho lý do).
 
 ## 3. Module map & interfaces chính
 

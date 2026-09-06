@@ -16,12 +16,14 @@ namespace UnityEngine
     public class Object
     {
         public string name;
+        public static void Destroy(Object obj) { }
     }
 
     public class Component : Object
     {
         public Transform transform { get; internal set; }
         public GameObject gameObject { get; internal set; }
+        public string tag { get; set; }
         public T GetComponent<T>() where T : class => default;
     }
 
@@ -32,15 +34,18 @@ namespace UnityEngine
 
     public class MonoBehaviour : Behaviour
     {
+        public static void DontDestroyOnLoad(Object obj) { }
     }
 
     public class ScriptableObject : Object
     {
+        public static T CreateInstance<T>() where T : ScriptableObject, new() => new T();
     }
 
     public sealed class GameObject : Object
     {
         public Transform transform { get; }
+        public string tag { get; set; }
         public GameObject() { }
         public GameObject(string name) { this.name = name; }
         public T AddComponent<T>() where T : Component, new() => new T();
@@ -90,7 +95,16 @@ namespace UnityEngine
     public sealed class Camera : Component
     {
         public static Camera main => default;
+        public bool orthographic { get; set; }
+        public float orthographicSize { get; set; }
         public Vector3 ScreenToWorldPoint(Vector3 position) => position;
+    }
+
+    public static class Debug
+    {
+        public static void Log(object message) { }
+        public static void LogWarning(object message) { }
+        public static void LogError(object message) { }
     }
 
     public enum TouchPhase

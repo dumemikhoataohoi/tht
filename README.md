@@ -12,8 +12,10 @@ Xem toàn bộ tài liệu thiết kế & kế hoạch:
 - [`RELEASE_PLAN.md`](RELEASE_PLAN.md) — kế hoạch build & phát hành Google Play.
 - [`LICENSE_MANIFEST.md`](LICENSE_MANIFEST.md) — theo dõi license mọi asset bên thứ ba.
 - [`CHANGELOG.md`](CHANGELOG.md) — lịch sử thay đổi theo milestone.
-- [`README_M1.md`](README_M1.md) — M1 (Core gameplay): cách mở Unity Editor, chạy
-  test, và những gì đã/chưa được xác minh trong môi trường không có Unity Editor.
+- [`README_M1.md`](README_M1.md) — M1/M1.5: những gì đã/chưa được xác minh trong môi
+  trường không có Unity Editor.
+- [`UNITY_SETUP.md`](UNITY_SETUP.md) — hướng dẫn từng bước: mở project, tạo data
+  asset/scene qua menu Editor, Play, chạy Test Runner, build Android debug.
 
 ## Yêu cầu để mở project
 

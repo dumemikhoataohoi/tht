@@ -3,13 +3,15 @@
   <!--
     NOT part of the Unity project and NOT a substitute for compiling inside the real
     Unity Editor. This links every production .cs file under Assets/_Project/Scripts
-    (including the MonoBehaviour/ScriptableObject adapters that reference UnityEngine)
-    against UnityEngineShim.cs — a small hand-written stand-in for the UnityEngine API,
-    not the real engine. Its only purpose is to catch typos, wrong member
-    names/signatures, and structural C# mistakes that a text review could miss, in the
-    files that `GemGrid.Logic.Tests` cannot cover (that project deliberately excludes
-    anything using UnityEngine). See README_M1.md for exactly what this does and does
-    not prove.
+    and Assets/_Project/Editor (including MonoBehaviour/ScriptableObject/Editor-only
+    code that references UnityEngine/UnityEditor), plus the PlayMode tests under
+    Assets/Tests/PlayMode, against a small hand-written stand-in for the relevant
+    UnityEngine/UnityEditor/Test Framework API surface (UnityEngineShim.cs,
+    UnityEditorAndTestShim.cs) — not the real engine. Its only purpose is to catch
+    typos, wrong member names/signatures, and structural C# mistakes that a text
+    review could miss, in the files that `GemGrid.Logic.Tests` cannot cover (that
+    project deliberately excludes anything using UnityEngine/UnityEditor). See
+    README_M1.md for exactly what this does and does not prove.
   -->
 
   <PropertyGroup>
@@ -18,14 +20,25 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <IsPackable>false</IsPackable>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- This whole project simulates an Editor compilation context (it includes the
+         Assets/_Project/Editor scripts), matching how Unity itself defines UNITY_EDITOR
+         only for Editor-context assemblies. -->
+    <DefineConstants>UNITY_EDITOR</DefineConstants>
     <!-- CS0649 ("field never assigned") is expected noise: these are [SerializeField]
          Inspector fields that Unity assigns via serialization, not C# assignment. -->
     <NoWarn>CS0067;CS0414;CS0649</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NUnit" Version="3.14.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Include="UnityEngineShim.cs" />
-    <Compile Include="..\..\..\Assets\_Project\Scripts\**\*.cs" Exclude="..\..\..\Assets\_Project\Scripts\**\*.asmdef" />
+    <Compile Include="UnityEditorAndTestShim.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\**\*.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Editor\**\*.cs" />
+    <Compile Include="..\..\..\Assets\Tests\PlayMode\**\*.cs" />
   </ItemGroup>
 
 </Project>

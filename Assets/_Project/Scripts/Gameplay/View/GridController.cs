@@ -11,7 +11,6 @@ namespace GemGrid.Gameplay
     ///
     /// NOT verified in the Unity Editor/Play Mode in this environment — see README_M1.md.
     /// </summary>
-    [RequireComponent(typeof(GameManagerBehaviour))]
     public class GridController : MonoBehaviour
     {
         [SerializeField] private float cellSize = 1f;
@@ -24,7 +23,11 @@ namespace GemGrid.Gameplay
 
         private void Awake()
         {
-            _gameManagerBehaviour = GetComponent<GameManagerBehaviour>();
+            _gameManagerBehaviour = GameManagerBehaviour.Instance;
+            if (_gameManagerBehaviour == null)
+                throw new System.InvalidOperationException(
+                    $"{nameof(GridController)} requires the game to be bootstrapped from the Boot scene first " +
+                    "(GameManagerBehaviour.Instance is null) — see UNITY_SETUP.md.");
         }
 
         private void Start()

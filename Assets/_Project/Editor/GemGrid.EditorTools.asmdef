@@ -1,0 +1,22 @@
+{
+    "name": "GemGrid.EditorTools",
+    "rootNamespace": "GemGrid.EditorTools",
+    "references": [
+        "GemGrid.Core",
+        "GemGrid.Configuration",
+        "GemGrid.Gameplay",
+        "GemGrid.Audio",
+        "GemGrid.Bootstrap"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

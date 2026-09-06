@@ -13,6 +13,14 @@ không có `Unity.exe`/binary Editor, không có license). Vì vậy:
 - Tôi sẽ cung cấp hướng dẫn chạy test/build rõ ràng trong `README.md` của project để
   Product Owner (hoặc CI) thực hiện bước này.
 
+> **Cập nhật M1.5**: đã bổ sung 2 lớp kiểm tra tĩnh bù đắp phần nào giới hạn trên —
+> `tools/dotnet-tests/GemGrid.Logic.Tests/` (chạy thật 44 unit test EditMode bằng
+> .NET SDK, không cần Unity) và `tools/dotnet-tests/GemGrid.UnitySyntaxCheck/` (biên
+> dịch toàn bộ code dùng UnityEngine/UnityEditor — kể cả Editor tooling và PlayMode
+> test — trước một shim API tự viết, để bắt lỗi cú pháp/tên thành viên sai). Cả hai
+> **không thay thế** việc chạy thật bằng Unity Editor — xem `README_M1.md` và
+> `UNITY_SETUP.md`.
+
 ## 2. Test pyramid
 
 | Tầng | Công cụ | Phạm vi |
@@ -26,6 +34,13 @@ không có `Unity.exe`/binary Editor, không có license). Vì vậy:
 - **M1**: đặt hợp lệ/không hợp lệ, clear 1 hàng/cột, clear nhiều dòng cùng lúc, combo
   tăng/giảm/reset, game-over detection (còn nước đi / hết nước đi) với các bộ grid
   dựng sẵn (bao gồm edge case: grid gần đầy, shape 1 ô, shape 5 ô).
+- **M1.5**: 2 PlayMode test tối thiểu (`Assets/Tests/PlayMode/BootFlowTests.cs`) —
+  Boot scene load → Gameplay scene → `GameManagerBehaviour.Instance.Game.State ==
+  Playing`; Restart reset đúng score/grid. Cố ý **không** có PlayMode test riêng cho
+  "Game Over tự nhiên qua Boot" vì phụ thuộc shape random từ asset thật → dễ flaky mà
+  không có Unity Editor để tinh chỉnh/xác minh — Game Over đã được cover đầy đủ ở mức
+  EditMode (`GameManagerFlowTests`, cùng class `GameManager`). Cả 2 PlayMode test này
+  **chưa từng chạy** (không có Unity Editor) — xem `README_M1.md` §4.
 - **M3**: tính XP/level, điều kiện hoàn thành mission, điều kiện mở achievement.
 - **M4**: cộng/trừ ví không cho âm, mua power-up đủ/thiếu tiền, nâng cấp đổi đúng
   hiệu ứng.

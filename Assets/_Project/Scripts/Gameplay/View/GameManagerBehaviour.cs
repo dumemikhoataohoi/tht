@@ -5,11 +5,17 @@ using UnityEngine;
 namespace GemGrid.Gameplay
 {
     /// <summary>
-    /// Composition root for the gameplay scene: wires ScriptableObject configuration into
-    /// the pure C# gameplay classes (<see cref="GridModel"/>, <see cref="ScoreManager"/>,
+    /// App-level composition root: wires ScriptableObject configuration into the pure
+    /// C# gameplay classes (<see cref="GridModel"/>, <see cref="ScoreManager"/>,
     /// <see cref="ComboManager"/>, <see cref="BlockSpawner"/>) and exposes the resulting
     /// <see cref="GameManager"/> for other MonoBehaviours (GridController,
     /// BlockDragController, hook listeners) to use.
+    ///
+    /// Lives on a GameObject in the Boot scene and survives the transition to the
+    /// Gameplay scene via <see cref="Object.DontDestroyOnLoad"/> — see
+    /// UNITY_SETUP.md for the Boot ▸ Gameplay scene flow. Other MonoBehaviours find it
+    /// through <see cref="Instance"/> rather than requiring it as a sibling component,
+    /// since it no longer lives in the same scene as them.
     ///
     /// NOT verified in the Unity Editor/Play Mode in this environment (no Unity Editor
     /// available in this sandbox) — see README_M1.md.
@@ -22,14 +28,27 @@ namespace GemGrid.Gameplay
         [SerializeField] private int gridHeight = 8;
         [SerializeField] private int traySize = 3;
 
+        public static GameManagerBehaviour Instance { get; private set; }
+
         public GameManager Game { get; private set; }
 
         private void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Debug.LogWarning("A second GameManagerBehaviour was found; destroying the duplicate. " +
+                                  "Only the one bootstrapped from the Boot scene should exist.");
+                Destroy(gameObject);
+                return;
+            }
+
             if (blockShapeSet == null)
                 throw new System.InvalidOperationException("GameManagerBehaviour requires a BlockShapeSet reference.");
             if (gameplayConfig == null)
                 throw new System.InvalidOperationException("GameManagerBehaviour requires a GameplayConfig reference.");
+
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
 
             var grid = new GridModel(gridWidth, gridHeight);
             var score = new ScoreManager(gameplayConfig.ScoreRules);
@@ -43,6 +62,11 @@ namespace GemGrid.Gameplay
         private void Start()
         {
             Game.StartNewGame();
+        }
+
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
         }
 
         public void Restart()

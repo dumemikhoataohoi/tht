@@ -5,6 +5,44 @@ milestone cho tới khi có bản release chính thức (sau đó chuyển sang 
 
 ## [Unreleased]
 
+### M1.5 — Unity integration verification
+
+#### Added
+- `GameManagerBehaviour` chuyển thành singleton (`Instance`) + `DontDestroyOnLoad`,
+  sống trên scene Boot và tồn tại xuyên suốt khi chuyển sang scene Gameplay.
+- `Assets/_Project/Scripts/Bootstrap/BootLoader.cs` + `GemGrid.Bootstrap.asmdef`:
+  chuyển từ Boot sang Gameplay scene sau khi khởi tạo xong.
+- `Core/IPointerInputSource` + `Gameplay/View/UnityPointerInputSource`: tách
+  `BlockDragController` khỏi việc gọi `UnityEngine.Input` trực tiếp; xác nhận Input
+  Manager cổ điển của Unity đã hỗ trợ sẵn touch thật trên Android, không cần thêm
+  package Input System mới.
+- `BlockShapeSet.EditorSetShapes(...)` (guard `#if UNITY_EDITOR`): hook cho Editor
+  tooling điền sẵn shape khởi điểm, tránh asset rỗng làm `BlockShapeLibrary` throw.
+- `Assets/_Project/Editor/` (`GemGrid.EditorTools.asmdef`): `GemGridAssetSetup.cs`
+  (menu tạo `BlockShapeSet.asset`/`GameplayConfig.asset`), `GemGridSceneSetup.cs`
+  (menu tạo `Boot.unity`/`Gameplay.unity` bằng API Unity — không hand-write YAML).
+- `Assets/Tests/PlayMode/` (`GemGrid.Tests.PlayMode.asmdef`, `BootFlowTests.cs`): 2
+  PlayMode test tối thiểu cho luồng Boot→Gameplay và Restart.
+- Mở rộng `tools/dotnet-tests/GemGrid.UnitySyntaxCheck/` để syntax-check cả Editor
+  tooling và PlayMode test (thêm `UnityEditorAndTestShim.cs`, `DefineConstants=
+  UNITY_EDITOR`).
+- `UNITY_SETUP.md`: hướng dẫn đầy đủ mở project, tạo asset/scene, Play, chạy Test
+  Runner, build Android debug.
+- Bỏ `com.unity.2d.tilemap` khỏi `Packages/manifest.json` — package không được dùng
+  bởi bất kỳ script nào (grid dựng bằng GameObject/SpriteRenderer thủ công, không
+  dùng Tilemap).
+
+#### Changed
+- `GridController`, `BlockDragController`, `HapticHookListener`,
+  `GameplayAnimationHooks`, `AudioHookListener`: bỏ
+  `[RequireComponent(typeof(GameManagerBehaviour))]` + `GetComponent`, đọc
+  `GameManagerBehaviour.Instance` thay thế (không còn cùng GameObject/scene).
+
+#### Known issues / chưa verify
+- Toàn bộ scene/asset do Editor tooling tạo ra, và cả 2 PlayMode test, **chưa từng
+  chạy thật** trong Unity Editor (không có sẵn trong sandbox) — chỉ mới syntax-check
+  bằng shim tự viết. Xem `README_M1.md` §4 và `UNITY_SETUP.md`.
+
 ### M1 — Core gameplay
 
 #### Added

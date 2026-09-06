@@ -10,7 +10,6 @@ namespace GemGrid.Gameplay
     ///
     /// NOT verified in the Unity Editor/Play Mode in this environment — see README_M1.md.
     /// </summary>
-    [RequireComponent(typeof(GameManagerBehaviour))]
     public class GameplayAnimationHooks : MonoBehaviour
     {
         [SerializeField] private UnityEvent onBlockPlaced;
@@ -21,7 +20,14 @@ namespace GemGrid.Gameplay
 
         private GameManagerBehaviour _gameManagerBehaviour;
 
-        private void Awake() => _gameManagerBehaviour = GetComponent<GameManagerBehaviour>();
+        private void Awake()
+        {
+            _gameManagerBehaviour = GameManagerBehaviour.Instance;
+            if (_gameManagerBehaviour == null)
+                throw new System.InvalidOperationException(
+                    $"{nameof(GameplayAnimationHooks)} requires the game to be bootstrapped from the Boot scene first " +
+                    "(GameManagerBehaviour.Instance is null) — see UNITY_SETUP.md.");
+        }
 
         private void Start()
         {

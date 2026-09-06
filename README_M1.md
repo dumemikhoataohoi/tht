@@ -5,6 +5,12 @@ data-driven, spawner, kéo/thả, đặt block, clear hàng/cột, score, combo,
 restart) theo `GAME_DESIGN.md` và `ARCHITECTURE.md`. Tài liệu này giải thích **chính
 xác** những gì đã được xác minh, những gì chưa, và cách tự kiểm tra khi có Unity Editor.
 
+> **Cập nhật M1.5**: đã thêm Boot/Gameplay scene (tạo qua Editor tooling, không hand
+> YAML), Editor tooling tạo data asset, input abstraction (`IPointerInputSource`), và
+> PlayMode test. Hướng dẫn mở/Play/build chi tiết từng bước nằm ở
+> **`UNITY_SETUP.md`** — tài liệu này chỉ còn tập trung vào "cái gì đã verify thật,
+> cái gì chưa".
+
 ## 1. Vì sao có hai cách "chạy test"
 
 Sandbox phát triển hiện tại **không có Unity Editor**. Toàn bộ logic gameplay thuần
@@ -39,25 +45,24 @@ dotnet test
 Kết quả thực tế tại thời điểm hoàn thành M1: **44/44 test pass**, build 0 warning
 (`dotnet build -warnaserror`). Đây là bằng chứng thật, không phải giả định.
 
-## 3. Chạy test trong Unity Editor (khi có máy có Unity)
+## 3. Mở project, tạo asset/scene, chạy test trong Unity Editor
 
-1. Cài **Unity 2022.3 LTS** (bản mới nhất trong nhánh 2022.3) qua Unity Hub, kèm
-   Android Build Support.
-2. Mở project bằng Unity Hub, trỏ tới thư mục gốc repo này. Lần mở đầu tiên, Unity sẽ
-   tự sinh `Library/`, các file `.meta` còn thiếu, và phần còn lại của
-   `ProjectSettings/` — đây là hành vi bình thường.
-3. **Trước khi Play**, tạo 2 data asset bắt buộc (chưa có sẵn — xem mục 5):
-   - `Assets ▸ Create ▸ GemGrid ▸ Configuration ▸ Block Shape Set`
-   - `Assets ▸ Create ▸ GemGrid ▸ Configuration ▸ Gameplay Config`
-4. Mở **Window ▸ General ▸ Test Runner ▸ EditMode ▸ Run All**. Kỳ vọng: 44 test pass
-   (cùng bộ test đã chạy bằng `dotnet test` ở mục 2 — **chưa có ai chạy bước này
-   thật sự trong môi trường hiện tại**, vì không có Unity Editor).
-5. Để thử gameplay thủ công: tạo một scene, thêm một GameObject với
-   `GameManagerBehaviour` + `GridController` + `BlockDragController` (+ tuỳ chọn
-   `HapticHookListener`, `GameplayAnimationHooks`), gán 2 asset ở bước 3 vào các
-   trường serialize, gán `cellSprite` bất kỳ (ô vuông trắng) trên `GridController` để
-   nhìn thấy lưới, rồi Play. Đây là phần **hoàn toàn chưa được xác minh** trong môi
-   trường hiện tại — không có gì đảm bảo nó chạy đúng ngay lần đầu.
+Xem **`UNITY_SETUP.md`** cho quy trình đầy đủ từng bước (Unity version, mở project,
+tạo data asset + scene qua menu `GemGrid ▸ Setup ▸ ...`, chạy Play, chạy Test Runner,
+build Android debug). Tóm tắt nhanh:
+
+1. Mở project bằng Unity Hub (bản LTS mới nhất — xem UNITY_SETUP.md §1).
+2. `GemGrid ▸ Setup ▸ 0. Create All Required Data Assets` (tạo `BlockShapeSet.asset` +
+   `GameplayConfig.asset` — không hand-edit YAML, xem mục 5 bên dưới).
+3. `GemGrid ▸ Setup ▸ 5. Create Boot And Gameplay Scenes`, rồi thêm cả hai vào
+   Build Settings ▸ Scenes In Build (Boot trước).
+4. Mở `Boot.unity`, bấm Play.
+5. **Window ▸ General ▸ Test Runner**: tab EditMode ▸ Run All (kỳ vọng 44/44 pass,
+   cùng bộ test đã pass thật bằng `dotnet test` ở mục 2); tab PlayMode ▸ Run All (2
+   test `BootFlowTests`).
+
+Toàn bộ quy trình trên **chưa từng được chạy thật** trong môi trường viết code này
+(không có Unity Editor) — xem mục 4.
 
 ## 4. Việc gì đã verify, việc gì chưa
 
@@ -78,11 +83,17 @@ Kết quả thực tế tại thời điểm hoàn thành M1: **44/44 test pass*
 ### Syntax-check bổ sung cho phần dùng UnityEngine (không thay thế Unity Editor thật)
 
 `tools/dotnet-tests/GemGrid.UnitySyntaxCheck/` biên dịch **toàn bộ** file production
-(kể cả `GameManagerBehaviour`, `GridController`, `BlockDragController`,
-`HapticHookListener`, `GameplayAnimationHooks`, `AudioHookListener`, `BlockShapeSet`,
-`GameplayConfig`) trước một shim `UnityEngine` tự viết tối thiểu (chỉ định nghĩa lại
-các kiểu/API thật sự được dùng: `MonoBehaviour`, `ScriptableObject`, `SerializeField`,
-`Vector3`, `Color`, `SpriteRenderer`, `Camera`, `Input`, `Mathf`, `UnityEvent`...).
+dùng UnityEngine/UnityEditor — MonoBehaviour (`GameManagerBehaviour`, `GridController`,
+`BlockDragController`, `HapticHookListener`, `GameplayAnimationHooks`,
+`AudioHookListener`, `BootLoader`), ScriptableObject (`BlockShapeSet`,
+`GameplayConfig`), **Editor tooling** (`GemGridAssetSetup`, `GemGridSceneSetup` —
+thêm ở M1.5), và **PlayMode test** (`BootFlowTests` — thêm ở M1.5) — trước một shim
+`UnityEngine`/`UnityEditor`/`UnityEngine.TestTools` tự viết tối thiểu
+(`UnityEngineShim.cs` + `UnityEditorAndTestShim.cs`; chỉ định nghĩa lại đúng các
+kiểu/API thật sự được dùng: `MonoBehaviour`, `ScriptableObject`, `SerializeField`,
+`Vector3`, `Color`, `SpriteRenderer`, `Camera`, `Input`, `Mathf`, `UnityEvent`,
+`MenuItem`, `AssetDatabase`, `SerializedObject`, `EditorSceneManager`, `SceneManager`,
+`UnityTest`, `UnityTearDown`...).
 
 ```bash
 cd tools/dotnet-tests/GemGrid.UnitySyntaxCheck
@@ -106,38 +117,44 @@ về mặt cú pháp/tên thành viên, không thay thế được việc mở b
   Editor-specific behaviour...) — chỉ mới syntax-check bằng shim tự viết ở trên, chưa
   có trình biên dịch Unity thật để xác nhận.
 - `GameManagerBehaviour`, `GridController`, `BlockDragController`,
-  `HapticHookListener`, `GameplayAnimationHooks`, `AudioHookListener`: thứ tự
-  MonoBehaviour lifecycle (Awake/Start), input thật (chuột/chạm), render sprite.
+  `HapticHookListener`, `GameplayAnimationHooks`, `AudioHookListener`, `BootLoader`:
+  thứ tự MonoBehaviour lifecycle thật (Awake/Start/`DontDestroyOnLoad` khi chuyển
+  scene), input thật (chuột/chạm), render sprite.
+- `GemGridAssetSetup`/`GemGridSceneSetup` (Editor tooling M1.5): chỉ syntax-check
+  được, **chưa từng thực sự chạy** — không có gì đảm bảo `AssetDatabase.CreateAsset`,
+  `EditorSceneManager.SaveScene`, `SerializedObject.FindProperty(...)` (đúng tên field
+  private `blockShapeSet`/`gameplayConfig`/`gridController`) hoạt động đúng như kỳ
+  vọng cho tới khi ai đó chạy menu `GemGrid ▸ Setup` thật trong Unity.
 - Test Runner EditMode chạy **bên trong Unity** (rất nhiều khả năng pass vì dùng
   đúng logic/test đã pass ở `dotnet test`, nhưng chưa ai chạy thật).
+- 2 PlayMode test (`BootFlowTests`) — **hoàn toàn chưa chạy lần nào**, kể cả không
+  qua `dotnet test` (không thể, vì phụ thuộc scene loading thật). Rủi ro lớn nhất là
+  số frame `yield return null` giả định để chờ Boot→Gameplay chuyển scene có thể
+  không đúng thực tế.
 - Hiệu năng, cảm giác chơi thật, UX kéo-thả trên thiết bị/emulator.
-- 2 ScriptableObject asset (`BlockShapeSet`, `GameplayConfig`) — class đã có, nhưng
-  chưa có asset `.asset` cụ thể nào được tạo (xem mục 5 — cố ý không tự tạo tay để
-  tránh sinh file YAML/GUID sai định dạng mà không cách nào xác minh).
+- Nội dung thật của `BlockShapeSet.asset`/`GameplayConfig.asset` sau khi Editor
+  tooling tạo ra — class + tool đã có, nhưng chưa ai chạy tool đó trong Unity thật để
+  xác nhận asset sinh ra đúng như code mong đợi (xem mục 5).
 
-## 5. Cần làm khi mở bằng Unity Editor lần đầu (chưa làm ở M1)
+## 5. Vì sao không hand-write `.unity`/`.asset` YAML
 
-Tạo `BlockShapeSet.asset` (đặt tại `Assets/_Project/ScriptableObjects/`) với vài
-shape khởi điểm gợi ý (tự thiết kế, không sao chép bộ hình của game nào khác) —
-ví dụ:
+M1.5 cố tình **không** tự viết tay file scene (`.unity`) hay asset ScriptableObject
+(`.asset`) — định dạng YAML của Unity phụ thuộc GUID (script `.meta`, cross-reference
+giữa asset) mà không có Unity Editor để sinh/kiểm chứng thì rủi ro tạo ra file hỏng
+(project không mở được scene, hoặc worse) là có thật và tôi không thể xác minh trước.
+Thay vào đó, `Assets/_Project/Editor/GemGridAssetSetup.cs` và `GemGridSceneSetup.cs`
+tạo asset/scene **bằng chính API của Unity** (`ScriptableObject.CreateInstance`,
+`AssetDatabase.CreateAsset`, `EditorSceneManager.NewScene/SaveScene`) khi một người
+chạy menu `GemGrid ▸ Setup ▸ ...` trong Unity Editor thật — Unity tự lo phần
+serialization đúng định dạng, tôi chỉ cần viết đúng C#. Xem `UNITY_SETUP.md` §3–4 cho
+quy trình chạy các menu này, và bảng 7 shape khởi điểm mà `GemGridAssetSetup` điền sẵn
+vào `BlockShapeSet.asset`.
 
-| Id | Cells (offset x,y) | SpawnWeight |
-|---|---|---|
-| dot | (0,0) | 2 |
-| domino_h | (0,0),(1,0) | 4 |
-| domino_v | (0,0),(0,1) | 4 |
-| tromino_l | (0,0),(1,0),(0,1) | 3 |
-| tetromino_square | (0,0),(1,0),(0,1),(1,1) | 2 |
-| line3_h | (0,0),(1,0),(2,0) | 3 |
-| line3_v | (0,0),(0,1),(0,2) | 3 |
-
-Tạo `GameplayConfig.asset` (cùng thư mục) giữ giá trị mặc định trong `ScoreRules`/
-`ComboRules` (đã có default hợp lý trong code) hoặc chỉnh theo `ECONOMY_DESIGN.md`
-sau khi playtest.
-
-## 6. Kết luận scope M1
+## 6. Kết luận scope M1 + M1.5
 
 M1 hoàn thành đúng 17 mục yêu cầu ở mức **logic + hook**, tách module rõ ràng, không
-God Class, không hard-code số liệu/shape trong gameplay logic. Phần UI hoàn chỉnh,
-art, animation thật, âm thanh thật, Ads, IAP đều **cố ý để ngoài phạm vi** — thuộc
-M2 trở đi theo đúng yêu cầu.
+God Class, không hard-code số liệu/shape trong gameplay logic. M1.5 đưa project từ
+"logic đã test" sang "có scene + tooling để mở bằng Unity và chạy thử thật" — vẫn ở
+mức functionality-only (primitive/placeholder visual), không phải UI hoàn chỉnh. Phần
+UI hoàn chỉnh, art, animation thật, âm thanh thật, Ads, IAP đều **cố ý để ngoài phạm
+vi** — thuộc M2 trở đi theo đúng yêu cầu.

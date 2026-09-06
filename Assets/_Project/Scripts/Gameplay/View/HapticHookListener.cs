@@ -10,7 +10,6 @@ namespace GemGrid.Gameplay
     ///
     /// NOT verified in the Unity Editor/Play Mode in this environment — see README_M1.md.
     /// </summary>
-    [RequireComponent(typeof(GameManagerBehaviour))]
     public class HapticHookListener : MonoBehaviour
     {
         private IHapticService _hapticService = NullHapticService.Instance;
@@ -19,7 +18,14 @@ namespace GemGrid.Gameplay
         public void SetHapticService(IHapticService hapticService) =>
             _hapticService = hapticService ?? NullHapticService.Instance;
 
-        private void Awake() => _gameManagerBehaviour = GetComponent<GameManagerBehaviour>();
+        private void Awake()
+        {
+            _gameManagerBehaviour = GameManagerBehaviour.Instance;
+            if (_gameManagerBehaviour == null)
+                throw new System.InvalidOperationException(
+                    $"{nameof(HapticHookListener)} requires the game to be bootstrapped from the Boot scene first " +
+                    "(GameManagerBehaviour.Instance is null) — see UNITY_SETUP.md.");
+        }
 
         private void Start()
         {
