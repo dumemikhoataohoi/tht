@@ -28,7 +28,7 @@ Assets/_Project/Scripts/Save/            -> GemGrid.Save.asmdef          (deps: 
 Assets/_Project/Scripts/Ads/             -> GemGrid.Ads.asmdef           (deps: Core)
 Assets/_Project/Scripts/IAP/             -> GemGrid.IAP.asmdef           (deps: Core, Economy)
 Assets/_Project/Scripts/Analytics/       -> GemGrid.Analytics.asmdef     (deps: Core)
-Assets/_Project/Scripts/Audio/           -> GemGrid.Audio.asmdef         (deps: Core)
+Assets/_Project/Scripts/Audio/           -> GemGrid.Audio.asmdef         (deps: Core, Gameplay — AudioHookListener subscribes to GameManagerBehaviour's events)
 Assets/_Project/Scripts/UI/              -> GemGrid.UI.asmdef            (deps: Core, Gameplay, Economy)
 Assets/_Project/Scripts/Bootstrap/       -> GemGrid.Bootstrap.asmdef     (deps: tất cả — composition root)
 Assets/Tests/EditMode/                   -> GemGrid.Tests.EditMode.asmdef (deps: tương ứng module test)
@@ -36,6 +36,18 @@ Assets/Tests/EditMode/                   -> GemGrid.Tests.EditMode.asmdef (deps:
 
 Quy tắc: **Gameplay không được reference UI, Ads, IAP, Analytics**. UI chỉ gọi vào
 Gameplay/Economy qua interface + event, không ngược lại.
+
+> **Cập nhật sau M1**: các MonoBehaviour/ScriptableObject adapter (cần UnityEngine)
+> nằm cạnh logic thuần trong cùng assembly để giữ đúng ranh giới module, nhưng được
+> tách vào file/thư mục riêng để không lẫn với phần đã unit-test được:
+> `Assets/_Project/Scripts/Gameplay/View/` chứa `GameManagerBehaviour` (composition
+> root của scene gameplay — không phải `Bootstrap/`, vốn dành cho entry point cấp
+> app ở milestone sau), `GridController`, `BlockDragController`,
+> `HapticHookListener`, `GameplayAnimationHooks`. Toàn bộ phần còn lại của
+> `Gameplay.asmdef` (`GridModel`, `GameManager`, `ScoreManager`, `ComboManager`,
+> `BlockSpawner`, `GameOverChecker`, `BlockPlacement`...) là C# thuần, không
+> `using UnityEngine`, để có thể biên dịch + chạy unit test cả trong lẫn ngoài Unity
+> Editor (xem README_M1.md).
 
 ## 3. Module map & interfaces chính
 

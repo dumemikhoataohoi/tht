@@ -1,0 +1,17 @@
+{
+    "name": "GemGrid.Audio",
+    "rootNamespace": "GemGrid.Audio",
+    "references": [
+        "GemGrid.Core",
+        "GemGrid.Gameplay"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,17 @@
+{
+    "name": "GemGrid.Gameplay",
+    "rootNamespace": "GemGrid.Gameplay",
+    "references": [
+        "GemGrid.Core",
+        "GemGrid.Configuration"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

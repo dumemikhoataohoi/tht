@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    NOT part of the Unity project and NOT a substitute for compiling inside the real
+    Unity Editor. This links every production .cs file under Assets/_Project/Scripts
+    (including the MonoBehaviour/ScriptableObject adapters that reference UnityEngine)
+    against UnityEngineShim.cs — a small hand-written stand-in for the UnityEngine API,
+    not the real engine. Its only purpose is to catch typos, wrong member
+    names/signatures, and structural C# mistakes that a text review could miss, in the
+    files that `GemGrid.Logic.Tests` cannot cover (that project deliberately excludes
+    anything using UnityEngine). See README_M1.md for exactly what this does and does
+    not prove.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- CS0649 ("field never assigned") is expected noise: these are [SerializeField]
+         Inspector fields that Unity assigns via serialization, not C# assignment. -->
+    <NoWarn>CS0067;CS0414;CS0649</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="UnityEngineShim.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\**\*.cs" Exclude="..\..\..\Assets\_Project\Scripts\**\*.asmdef" />
+  </ItemGroup>
+
+</Project>

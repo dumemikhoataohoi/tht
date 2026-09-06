@@ -65,3 +65,13 @@ secrets.json
 .vs/
 .idea/
 *.swp
+
+# ===== dotnet-tests (standalone verification project under tools/) =====
+# Ignores build output, then re-allows the hand-written .csproj that the generic
+# "*.csproj" rule above (targeting Unity's auto-generated per-script IDE project
+# files) would otherwise also hide. Negations must come last to win.
+tools/dotnet-tests/**/bin/
+tools/dotnet-tests/**/obj/
+tools/dotnet-tests/**/TestResults/
+!tools/dotnet-tests/**/*.csproj
+!tools/dotnet-tests/**/*.cs

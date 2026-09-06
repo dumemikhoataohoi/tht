@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    This project is NOT part of the Unity project. It exists solely so that the
+    UnityEngine-free gameplay logic under Assets/_Project/Scripts/{Core,Configuration,Gameplay}
+    (and the matching NUnit tests under Assets/Tests/EditMode) can be compiled and actually
+    executed with `dotnet test` in an environment without the Unity Editor.
+
+    Every <Compile Include> below links (not copies) the exact same .cs files that ship
+    inside the Unity project, so there is a single source of truth. Only files that use
+    UnityEngine (ScriptableObject/MonoBehaviour adapters) are excluded here — those can only
+    be verified inside the Unity Editor, see README_M1.md.
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <RootNamespace></RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+
+  <!-- Production logic (UnityEngine-free) -->
+  <ItemGroup>
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Core\Int2.cs" Link="Production\Core\Int2.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Core\GameStateType.cs" Link="Production\Core\GameStateType.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Core\IRandomSource.cs" Link="Production\Core\IRandomSource.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Core\SystemRandomSource.cs" Link="Production\Core\SystemRandomSource.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Core\IHapticService.cs" Link="Production\Core\IHapticService.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Core\NullHapticService.cs" Link="Production\Core\NullHapticService.cs" />
+
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Configuration\BlockShapeDefinition.cs" Link="Production\Configuration\BlockShapeDefinition.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Configuration\BlockShapeLibrary.cs" Link="Production\Configuration\BlockShapeLibrary.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Configuration\IBlockShapeProvider.cs" Link="Production\Configuration\IBlockShapeProvider.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Configuration\ScoreRules.cs" Link="Production\Configuration\ScoreRules.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Configuration\ComboRules.cs" Link="Production\Configuration\ComboRules.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Configuration\IGameplayConfigProvider.cs" Link="Production\Configuration\IGameplayConfigProvider.cs" />
+
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\LineClearResult.cs" Link="Production\Gameplay\LineClearResult.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\PlacementResult.cs" Link="Production\Gameplay\PlacementResult.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\BlockPlacement.cs" Link="Production\Gameplay\BlockPlacement.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\IGridModel.cs" Link="Production\Gameplay\IGridModel.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\GridModel.cs" Link="Production\Gameplay\GridModel.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\BlockData.cs" Link="Production\Gameplay\BlockData.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\BlockSpawner.cs" Link="Production\Gameplay\BlockSpawner.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\GameOverChecker.cs" Link="Production\Gameplay\GameOverChecker.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\ScoreManager.cs" Link="Production\Gameplay\ScoreManager.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\ComboManager.cs" Link="Production\Gameplay\ComboManager.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\GameplayEvents.cs" Link="Production\Gameplay\GameplayEvents.cs" />
+    <Compile Include="..\..\..\Assets\_Project\Scripts\Gameplay\GameManager.cs" Link="Production\Gameplay\GameManager.cs" />
+  </ItemGroup>
+
+  <!-- Tests (identical files used by Unity's EditMode Test Runner) -->
+  <ItemGroup>
+    <Compile Include="..\..\..\Assets\Tests\EditMode\TestSupport\BlockShapeTestFactory.cs" Link="Tests\TestSupport\BlockShapeTestFactory.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\TestSupport\FakeRandomSource.cs" Link="Tests\TestSupport\FakeRandomSource.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\TestSupport\FakeBlockShapeProvider.cs" Link="Tests\TestSupport\FakeBlockShapeProvider.cs" />
+
+    <Compile Include="..\..\..\Assets\Tests\EditMode\GridModelTests.cs" Link="Tests\GridModelTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\ScoreManagerTests.cs" Link="Tests\ScoreManagerTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\ComboManagerTests.cs" Link="Tests\ComboManagerTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\GameOverCheckerTests.cs" Link="Tests\GameOverCheckerTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\BlockSpawnerTests.cs" Link="Tests\BlockSpawnerTests.cs" />
+    <Compile Include="..\..\..\Assets\Tests\EditMode\GameManagerFlowTests.cs" Link="Tests\GameManagerFlowTests.cs" />
+  </ItemGroup>
+
+</Project>
