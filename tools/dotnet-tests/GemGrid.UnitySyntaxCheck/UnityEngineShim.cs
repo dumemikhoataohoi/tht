@@ -17,6 +17,7 @@ namespace UnityEngine
     {
         public string name;
         public static void Destroy(Object obj) { }
+        public static void DontDestroyOnLoad(Object obj) { }
         public static T FindObjectOfType<T>() where T : class => null;
     }
 
@@ -35,7 +36,6 @@ namespace UnityEngine
 
     public class MonoBehaviour : Behaviour
     {
-        public static void DontDestroyOnLoad(Object obj) { }
         public object StartCoroutine(System.Collections.IEnumerator routine) => null;
     }
 
@@ -81,6 +81,7 @@ namespace UnityEngine
     {
         public float x, y, z;
         public Vector3(float x, float y, float z) { this.x = x; this.y = y; this.z = z; }
+        public static Vector3 zero => new Vector3(0f, 0f, 0f);
         public static Vector3 one => new Vector3(1f, 1f, 1f);
         public static Vector3 operator +(Vector3 a, Vector3 b) => new Vector3(a.x + b.x, a.y + b.y, a.z + b.z);
         public static Vector3 operator -(Vector3 a, Vector3 b) => new Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
@@ -95,10 +96,17 @@ namespace UnityEngine
         public Vector2(float x, float y) { this.x = x; this.y = y; }
         public static Vector2 zero => new Vector2(0f, 0f);
         public static Vector2 one => new Vector2(1f, 1f);
+        public static Vector2 operator +(Vector2 a, Vector2 b) => new Vector2(a.x + b.x, a.y + b.y);
 
         // Real UnityEngine.Vector2 defines this implicit conversion (dropping/adding a
         // zero z component); several call sites in the codebase rely on it.
         public static implicit operator Vector3(Vector2 v) => new Vector3(v.x, v.y, 0f);
+    }
+
+    public struct Vector2Int
+    {
+        public int x, y;
+        public Vector2Int(int x, int y) { this.x = x; this.y = y; }
     }
 
     public class Collider2D : Component
@@ -112,10 +120,11 @@ namespace UnityEngine
 
     public struct Color
     {
-        public Color(float r, float g, float b, float a = 1f) { }
-        public static Color gray => default;
-        public static Color cyan => default;
-        public static Color white => default;
+        public float r, g, b, a;
+        public Color(float r, float g, float b, float a = 1f) { this.r = r; this.g = g; this.b = b; this.a = a; }
+        public static Color gray => new Color(0.5f, 0.5f, 0.5f);
+        public static Color cyan => new Color(0f, 1f, 1f);
+        public static Color white => new Color(1f, 1f, 1f);
         public static Color Lerp(Color a, Color b, float t) => default;
     }
 
@@ -123,6 +132,7 @@ namespace UnityEngine
     {
         public Sprite sprite { get; set; }
         public Color color { get; set; }
+        public int sortingOrder { get; set; }
     }
 
     public sealed class Sprite
@@ -132,7 +142,38 @@ namespace UnityEngine
 
     public struct Rect
     {
-        public Rect(float x, float y, float width, float height) { }
+        public float x, y, width, height;
+        public Rect(float x, float y, float width, float height) { this.x = x; this.y = y; this.width = width; this.height = height; }
+        public Vector2 position { get => new Vector2(x, y); set { x = value.x; y = value.y; } }
+        public Vector2 size { get => new Vector2(width, height); set { width = value.x; height = value.y; } }
+        public static bool operator ==(Rect a, Rect b) => a.x == b.x && a.y == b.y && a.width == b.width && a.height == b.height;
+        public static bool operator !=(Rect a, Rect b) => !(a == b);
+        public override bool Equals(object obj) => obj is Rect other && this == other;
+        public override int GetHashCode() => (x, y, width, height).GetHashCode();
+    }
+
+    public static class Screen
+    {
+        public static Rect safeArea => new Rect(0f, 0f, 1080f, 1920f);
+        public static int width => 1080;
+        public static int height => 1920;
+    }
+
+    public sealed class AudioClip : Object
+    {
+        public static AudioClip Create(string name, int lengthSamples, int channels, int frequency, bool stream) =>
+            new AudioClip { name = name };
+        public void SetData(float[] data, int offsetSamples) { }
+    }
+
+    public sealed class AudioSource : Component
+    {
+        public bool playOnAwake { get; set; }
+        public float volume { get; set; } = 1f;
+        public void PlayOneShot(AudioClip clip) { }
+        public void PlayOneShot(AudioClip clip, float volumeScale) { }
+        public static void PlayClipAtPoint(AudioClip clip, Vector3 position) { }
+        public static void PlayClipAtPoint(AudioClip clip, Vector3 position, float volume) { }
     }
 
     public enum TextureFormat
@@ -206,8 +247,11 @@ namespace UnityEngine
 
     public static class Mathf
     {
+        public const float PI = 3.14159274f;
         public static int RoundToInt(float f) => (int)Math.Round(f, MidpointRounding.AwayFromZero);
         public static float Lerp(float a, float b, float t) => a + (b - a) * Math.Clamp(t, 0f, 1f);
+        public static float Max(float a, float b) => Math.Max(a, b);
+        public static float Sin(float f) => (float)Math.Sin(f);
     }
 
     public static class Time

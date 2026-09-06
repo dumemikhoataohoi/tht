@@ -4,15 +4,16 @@ using UnityEngine;
 namespace GemGrid.Audio
 {
     /// <summary>
-    /// Bridges gameplay events to <see cref="IAudioService"/>. Uses the no-op
-    /// implementation by default; a real implementation is wired in once audio assets
-    /// exist (M8, or sooner if art/audio lands earlier).
+    /// Bridges gameplay events to <see cref="IAudioService"/>. Defaults to the shared
+    /// procedural-tone service (<see cref="SharedAudioService"/>) so SFX play with zero
+    /// external audio assets; callers can still override via <see cref="SetAudioService"/>
+    /// (e.g. tests use <see cref="NullAudioService"/>).
     ///
     /// NOT verified in the Unity Editor/Play Mode in this environment — see README_M1.md.
     /// </summary>
     public class AudioHookListener : MonoBehaviour
     {
-        private IAudioService _audioService = NullAudioService.Instance;
+        private IAudioService _audioService = SharedAudioService.Instance;
         private GameManagerBehaviour _gameManagerBehaviour;
 
         public void SetAudioService(IAudioService audioService) =>
@@ -34,6 +35,7 @@ namespace GemGrid.Audio
             game.LinesClearedEvent += OnLinesCleared;
             game.GameOver += OnGameOver;
             game.GameRestarted += OnGameRestarted;
+            game.Combo.ComboChanged += OnComboChanged;
         }
 
         private void OnDestroy()
@@ -44,11 +46,17 @@ namespace GemGrid.Audio
             game.LinesClearedEvent -= OnLinesCleared;
             game.GameOver -= OnGameOver;
             game.GameRestarted -= OnGameRestarted;
+            game.Combo.ComboChanged -= OnComboChanged;
         }
 
         private void OnBlockPlaced(BlockPlacedEventArgs args) => _audioService.PlaySfx(SfxId.BlockPlace);
         private void OnLinesCleared(LinesClearedEventArgs args) => _audioService.PlaySfx(SfxId.LineClear);
         private void OnGameOver() => _audioService.PlaySfx(SfxId.GameOver);
         private void OnGameRestarted() => _audioService.PlaySfx(SfxId.Restart);
+
+        private void OnComboChanged(int combo)
+        {
+            if (combo > 1) _audioService.PlaySfx(SfxId.Combo);
+        }
     }
 }

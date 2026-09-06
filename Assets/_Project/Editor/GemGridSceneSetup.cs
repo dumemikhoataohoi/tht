@@ -34,9 +34,9 @@ namespace GemGrid.EditorTools
         internal const string GameplayScenePath = ScenesFolder + "/Gameplay.unity";
 
         private static readonly Vector2 ReferenceResolution = new Vector2(1080, 1920);
-        private static readonly Color BackgroundColor = new Color(0.09f, 0.10f, 0.16f);
-        private static readonly Color AccentColor = new Color(0.35f, 0.70f, 0.95f);
-        private static readonly Color TextColor = Color.white;
+        private static readonly Color BackgroundColor = GemPalette.Background;
+        private static readonly Color AccentColor = GemPalette.Accent;
+        private static readonly Color TextColor = GemPalette.TextPrimary;
 
         /// <summary>Creates Boot.unity if it doesn't already exist. Returns true if it was (or already is) present.</summary>
         internal static bool EnsureBootScene()
@@ -89,14 +89,18 @@ namespace GemGrid.EditorTools
             var canvas = CreateCanvas("MainMenuCanvas");
 
             CreateFullScreenBackground(canvas.transform, BackgroundColor);
+            var safeArea = CreateSafeAreaContainer(canvas.transform);
 
-            var title = CreateText(canvas.transform, "TitleText", "GemGrid", 96, TextColor);
+            var title = CreateText(safeArea, "TitleText", "GemGrid", 96, TextColor);
             AnchorTopCenter(title.rectTransform, new Vector2(0f, -260f), new Vector2(800f, 140f));
 
-            var bestScoreText = CreateText(canvas.transform, "BestScoreText", "Best 0", 48, TextColor);
+            var subtitle = CreateText(safeArea, "SubtitleText", "Line up. Clear. Chain combos.", 36, GemPalette.TextSecondary);
+            AnchorTopCenter(subtitle.rectTransform, new Vector2(0f, -360f), new Vector2(760f, 70f));
+
+            var bestScoreText = CreateText(safeArea, "BestScoreText", "Best 0", 48, TextColor);
             AnchorCenter(bestScoreText.rectTransform, new Vector2(0f, 60f), new Vector2(600f, 80f));
 
-            var startButton = CreateButton(canvas.transform, "StartGameButton", "START GAME", AccentColor);
+            var startButton = CreateButton(safeArea, "StartGameButton", "START GAME", AccentColor);
             AnchorCenter(startButton.GetComponent<RectTransform>(), new Vector2(0f, -220f), new Vector2(560f, 160f));
 
             var controllerGo = new GameObject("MainMenuController");
@@ -150,7 +154,8 @@ namespace GemGrid.EditorTools
 
             EnsureEventSystem();
             var canvas = CreateCanvas("GameplayCanvas");
-            BuildGameplayHud(canvas.transform);
+            var safeArea = CreateSafeAreaContainer(canvas.transform);
+            BuildGameplayHud(safeArea);
             BuildGameOverPanel(canvas.transform);
 
             EnsureScenesFolder();
@@ -161,6 +166,20 @@ namespace GemGrid.EditorTools
 
         private static void BuildGameplayHud(Transform canvasTransform)
         {
+            // Backdrop bar behind the score/best/combo text so it stays legible over any
+            // board/tray color underneath — created first so it renders behind everything
+            // else added to this same parent.
+            var backdropGo = new GameObject("HudBackdrop");
+            backdropGo.transform.SetParent(canvasTransform, false);
+            var backdropRect = backdropGo.AddComponent<RectTransform>();
+            backdropRect.anchorMin = new Vector2(0f, 1f);
+            backdropRect.anchorMax = new Vector2(1f, 1f);
+            backdropRect.pivot = new Vector2(0.5f, 1f);
+            backdropRect.sizeDelta = new Vector2(0f, 180f);
+            backdropRect.anchoredPosition = Vector2.zero;
+            var backdropImage = backdropGo.AddComponent<Image>();
+            backdropImage.color = new Color(GemPalette.Surface.r, GemPalette.Surface.g, GemPalette.Surface.b, 0.85f);
+
             var scoreText = CreateText(canvasTransform, "ScoreText", "Score 0", 56, TextColor);
             AnchorTopLeft(scoreText.rectTransform, new Vector2(40f, -50f), new Vector2(400f, 70f));
 
@@ -201,27 +220,41 @@ namespace GemGrid.EditorTools
             panelRect.offsetMax = Vector2.zero;
             var panelImage = panelGo.AddComponent<Image>();
             panelImage.color = new Color(0f, 0f, 0f, 0.75f);
+            var panelCanvasGroup = panelGo.AddComponent<CanvasGroup>();
             panelGo.SetActive(false);
 
-            var title = CreateText(panelGo.transform, "GameOverTitle", "GAME OVER", 80, TextColor);
+            var safeArea = CreateSafeAreaContainer(panelGo.transform);
+
+            // Card backdrop behind the title/scores/buttons, created first so it renders
+            // behind them — gives Game Over a distinct "panel" presentation instead of
+            // text floating directly over the dim overlay.
+            var cardGo = new GameObject("GameOverCard");
+            cardGo.transform.SetParent(safeArea, false);
+            var cardRect = cardGo.AddComponent<RectTransform>();
+            AnchorCenter(cardRect, new Vector2(0f, 20f), new Vector2(840f, 900f));
+            var cardImage = cardGo.AddComponent<Image>();
+            cardImage.color = GemPalette.Surface;
+
+            var title = CreateText(safeArea, "GameOverTitle", "GAME OVER", 80, TextColor);
             AnchorCenter(title.rectTransform, new Vector2(0f, 260f), new Vector2(700f, 120f));
 
-            var finalScoreText = CreateText(panelGo.transform, "FinalScoreText", "Score 0", 52, TextColor);
+            var finalScoreText = CreateText(safeArea, "FinalScoreText", "Score 0", 52, TextColor);
             AnchorCenter(finalScoreText.rectTransform, new Vector2(0f, 140f), new Vector2(600f, 70f));
 
-            var bestScoreText = CreateText(panelGo.transform, "BestScoreText", "Best 0", 40, TextColor);
+            var bestScoreText = CreateText(safeArea, "BestScoreText", "Best 0", 40, TextColor);
             AnchorCenter(bestScoreText.rectTransform, new Vector2(0f, 70f), new Vector2(600f, 60f));
 
-            var restartButton = CreateButton(panelGo.transform, "RestartButton", "RESTART", AccentColor);
+            var restartButton = CreateButton(safeArea, "RestartButton", "RESTART", AccentColor);
             AnchorCenter(restartButton.GetComponent<RectTransform>(), new Vector2(0f, -60f), new Vector2(500f, 140f));
 
-            var mainMenuButton = CreateButton(panelGo.transform, "MainMenuButton", "MAIN MENU", new Color(0.5f, 0.5f, 0.55f));
+            var mainMenuButton = CreateButton(safeArea, "MainMenuButton", "MAIN MENU", GemPalette.Neutral);
             AnchorCenter(mainMenuButton.GetComponent<RectTransform>(), new Vector2(0f, -230f), new Vector2(500f, 120f));
 
             var screenGo = new GameObject("GameOverScreen");
             var screen = screenGo.AddComponent<GameOverScreen>();
             var serializedScreen = new SerializedObject(screen);
             serializedScreen.FindProperty("panelRoot").objectReferenceValue = panelGo;
+            serializedScreen.FindProperty("panelCanvasGroup").objectReferenceValue = panelCanvasGroup;
             serializedScreen.FindProperty("finalScoreText").objectReferenceValue = finalScoreText;
             serializedScreen.FindProperty("bestScoreText").objectReferenceValue = bestScoreText;
             serializedScreen.FindProperty("restartButton").objectReferenceValue = restartButton;
@@ -245,6 +278,27 @@ namespace GemGrid.EditorTools
 
             canvasGo.AddComponent<GraphicRaycaster>();
             return canvas;
+        }
+
+        /// <summary>
+        /// Full-stretch child of the Canvas fitted to <see cref="UnityEngine.Screen.safeArea"/>
+        /// at runtime (see <see cref="GemGrid.UI.SafeAreaFitter"/>) — real screen content
+        /// (text, buttons) is parented under this instead of directly under the Canvas so
+        /// it never sits under a device notch/cutout/rounded corner. Full-screen
+        /// backgrounds/dim overlays stay direct Canvas children since those should cover
+        /// the whole screen regardless of the safe area.
+        /// </summary>
+        private static RectTransform CreateSafeAreaContainer(Transform parent)
+        {
+            var go = new GameObject("SafeArea");
+            go.transform.SetParent(parent, false);
+            var rect = go.AddComponent<RectTransform>();
+            rect.anchorMin = Vector2.zero;
+            rect.anchorMax = Vector2.one;
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+            go.AddComponent<GemGrid.UI.SafeAreaFitter>();
+            return rect;
         }
 
         private static void EnsureEventSystem()
@@ -292,6 +346,7 @@ namespace GemGrid.EditorTools
 
             var button = go.AddComponent<Button>();
             go.AddComponent<ButtonPunchFeedback>();
+            go.AddComponent<GemGrid.Audio.ButtonClickSfx>();
 
             var label_ = CreateText(go.transform, "Label", label, 40, TextColor);
             var labelRect = label_.rectTransform;

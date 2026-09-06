@@ -24,6 +24,9 @@ namespace GemGrid.Gameplay
         private int _draggedSlotIndex = -1;
         private Transform _draggedVisual;
         private Vector3 _dragStartPosition;
+        private Vector3 _dragStartScale;
+
+        private const float DragScaleMultiplier = 1.15f;
 
         /// <summary>Swap in a fake input source for tests, or a different real backend later.</summary>
         public void SetInputSource(IPointerInputSource inputSource) =>
@@ -46,6 +49,8 @@ namespace GemGrid.Gameplay
             _draggedSlotIndex = traySlotIndex;
             _draggedVisual = visual;
             _dragStartPosition = visual.position;
+            _dragStartScale = visual.localScale;
+            visual.localScale = _dragStartScale * DragScaleMultiplier;
         }
 
         private void Update()
@@ -68,9 +73,13 @@ namespace GemGrid.Gameplay
             bool placed = _gameManagerBehaviour.Game.TryPlaceBlock(_draggedSlotIndex, origin);
 
             // Invalid placement must not "lose" the block visually either — snap it
-            // back to where the drag started so the player can try again.
+            // back to where the drag started, at its original (non-dragging) scale, so
+            // the player can try again.
             if (!placed)
+            {
                 _draggedVisual.position = _dragStartPosition;
+                _draggedVisual.localScale = _dragStartScale;
+            }
 
             _draggedSlotIndex = -1;
             _draggedVisual = null;

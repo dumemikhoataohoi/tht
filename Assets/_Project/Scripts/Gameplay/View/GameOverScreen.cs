@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -15,6 +16,7 @@ namespace GemGrid.Gameplay
     public class GameOverScreen : MonoBehaviour
     {
         [SerializeField] private GameObject panelRoot;
+        [SerializeField] private CanvasGroup panelCanvasGroup;
         [SerializeField] private Text finalScoreText;
         [SerializeField] private Text bestScoreText;
         [SerializeField] private Button restartButton;
@@ -58,7 +60,11 @@ namespace GemGrid.Gameplay
 
             if (finalScoreText != null) finalScoreText.text = $"Score {finalScore}";
             if (bestScoreText != null) bestScoreText.text = $"Best {best}";
-            if (panelRoot != null) panelRoot.SetActive(true);
+            if (panelRoot != null)
+            {
+                panelRoot.SetActive(true);
+                if (panelCanvasGroup != null) StartCoroutine(FadeInPanel());
+            }
         }
 
         private void OnRestarted()
@@ -69,5 +75,27 @@ namespace GemGrid.Gameplay
         private void OnRestartClicked() => _gameManagerBehaviour.Restart();
 
         private void OnMainMenuClicked() => SceneManager.LoadScene(mainMenuSceneName);
+
+        /// <summary>Fade + scale-up intro so Game Over doesn't just snap on screen instantly.</summary>
+        private IEnumerator FadeInPanel()
+        {
+            var rect = panelCanvasGroup.GetComponent<RectTransform>();
+            const float duration = 0.22f;
+            const float startScale = 0.85f;
+            panelCanvasGroup.alpha = 0f;
+            if (rect != null) rect.localScale = Vector3.one * startScale;
+
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+                float k = t / duration;
+                panelCanvasGroup.alpha = Mathf.Lerp(0f, 1f, k);
+                if (rect != null) rect.localScale = Vector3.Lerp(Vector3.one * startScale, Vector3.one, k);
+                yield return null;
+            }
+            panelCanvasGroup.alpha = 1f;
+            if (rect != null) rect.localScale = Vector3.one;
+        }
     }
 }

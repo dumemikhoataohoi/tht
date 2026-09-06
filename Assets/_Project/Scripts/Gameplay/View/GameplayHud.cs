@@ -54,7 +54,12 @@ namespace GemGrid.Gameplay
 
         private void OnScoreChanged(int total)
         {
-            if (scoreText != null) scoreText.text = $"Score {total}";
+            if (scoreText != null)
+            {
+                scoreText.text = $"Score {total}";
+                StartCoroutine(PulseTransform(scoreText.rectTransform));
+            }
+
             if (total > _bestScore)
             {
                 _bestScore = total;
@@ -68,7 +73,7 @@ namespace GemGrid.Gameplay
                 comboText.text = combo > 0 ? $"Combo x{combo}" : string.Empty;
 
             if (combo > 1 && comboBadge != null)
-                StartCoroutine(PulseBadge());
+                StartCoroutine(PulseTransform(comboBadge));
         }
 
         private void OnRestarted()
@@ -85,7 +90,8 @@ namespace GemGrid.Gameplay
             if (comboText != null) comboText.text = string.Empty;
         }
 
-        private IEnumerator PulseBadge()
+        /// <summary>Small scale "pop" used for both the score text and the combo badge on change.</summary>
+        private static IEnumerator PulseTransform(RectTransform rect)
         {
             Vector3 baseScale = Vector3.one;
             const float duration = 0.15f;
@@ -93,11 +99,12 @@ namespace GemGrid.Gameplay
             while (t < duration)
             {
                 t += Time.deltaTime;
+                if (rect == null) yield break;
                 float k = Mathf.Lerp(1.25f, 1f, t / duration);
-                comboBadge.localScale = baseScale * k;
+                rect.localScale = baseScale * k;
                 yield return null;
             }
-            comboBadge.localScale = baseScale;
+            if (rect != null) rect.localScale = baseScale;
         }
     }
 }

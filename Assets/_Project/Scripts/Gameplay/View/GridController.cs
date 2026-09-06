@@ -20,9 +20,10 @@ namespace GemGrid.Gameplay
     {
         [SerializeField] private float cellSize = 1f;
         [SerializeField] private Sprite cellSprite;
-        [SerializeField] private Color emptyColor = new Color(0.16f, 0.18f, 0.26f);
-        [SerializeField] private Color occupiedColor = new Color(0.25f, 0.85f, 0.65f);
-        [SerializeField] private Color clearFlashColor = Color.white;
+        [SerializeField] private Color emptyColor = GemPalette.CellEmpty;
+        [SerializeField] private Color occupiedColor = GemPalette.CellFilledFallback;
+        [SerializeField] private Color clearFlashColor = GemPalette.ClearFlash;
+        [SerializeField] private Color boardBackdropColor = GemPalette.Surface;
 
         private GameManagerBehaviour _gameManagerBehaviour;
         private SpriteRenderer[,] _cellViews;
@@ -64,6 +65,8 @@ namespace GemGrid.Gameplay
         private void BuildCellViews()
         {
             var grid = _gameManagerBehaviour.Game.Grid;
+            CreateBoardBackdrop(grid.Width, grid.Height);
+
             _cellViews = new SpriteRenderer[grid.Width, grid.Height];
             _wasOccupied = new bool[grid.Width, grid.Height];
 
@@ -79,9 +82,26 @@ namespace GemGrid.Gameplay
 
                     var renderer = cellObject.AddComponent<SpriteRenderer>();
                     renderer.sprite = cellSprite != null ? cellSprite : PlaceholderSprite.White;
+                    renderer.sortingOrder = 1;
                     _cellViews[x, y] = renderer;
                 }
             }
+        }
+
+        /// <summary>A single backdrop panel behind the whole 8x8 board, giving it a
+        /// framed "board" presentation instead of cells floating on the bare scene background.</summary>
+        private void CreateBoardBackdrop(int width, int height)
+        {
+            const float margin = 0.3f;
+            var backdropGo = new GameObject("BoardBackdrop");
+            backdropGo.transform.SetParent(transform, false);
+            backdropGo.transform.localPosition = new Vector3((width - 1) * cellSize * 0.5f, (height - 1) * cellSize * 0.5f, 0f);
+            backdropGo.transform.localScale = new Vector3(width * cellSize + margin, height * cellSize + margin, 1f);
+
+            var renderer = backdropGo.AddComponent<SpriteRenderer>();
+            renderer.sprite = PlaceholderSprite.White;
+            renderer.color = boardBackdropColor;
+            renderer.sortingOrder = 0;
         }
 
         private void RefreshAllCells()

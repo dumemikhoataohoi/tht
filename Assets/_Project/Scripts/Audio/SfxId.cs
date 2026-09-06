@@ -6,6 +6,8 @@ namespace GemGrid.Audio
         BlockPlace,
         LineClear,
         GameOver,
-        Restart
+        Restart,
+        Combo,
+        ButtonClick
     }
 }

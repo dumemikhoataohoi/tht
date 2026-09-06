@@ -24,6 +24,13 @@ namespace UnityEngine
     {
         public RenderMode renderMode { get; set; }
     }
+
+    public sealed class CanvasGroup : Behaviour
+    {
+        public float alpha { get; set; } = 1f;
+        public bool interactable { get; set; } = true;
+        public bool blocksRaycasts { get; set; } = true;
+    }
 }
 
 namespace UnityEngine.UI
