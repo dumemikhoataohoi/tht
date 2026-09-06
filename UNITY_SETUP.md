@@ -114,6 +114,15 @@ Double-click `Assets/_Project/Scenes/Boot.unity` trong Project window. **Không*
 trực tiếp `MainMenu.unity`/`Gameplay.unity` để Play — các script đọc
 `GameManagerBehaviour.Instance`, chỉ tồn tại sau khi Boot chạy qua (`DontDestroyOnLoad`).
 
+> **Lưu ý quan trọng**: mặc định, nút Play của Unity Editor chạy **scene đang mở
+> trong tab hiện tại**, không tự chạy từ Boot — nếu đang mở `MainMenu.unity` hoặc
+> `Gameplay.unity` khi bấm Play, `Boot` (và do đó `GameManagerBehaviour`) sẽ không
+> bao giờ được tạo, gây lỗi `InvalidOperationException: ... Instance is null` ở mọi
+> component đọc `GameManagerBehaviour.Instance`. `GemGridAutoSetup.cs` đã tự đặt
+> `EditorSceneManager.playModeStartScene = Boot.unity` sau khi compile xong, để bấm
+> Play **luôn luôn** chạy từ Boot trước bất kể tab nào đang mở — không cần tự tay mở
+> đúng Boot.unity nữa, nhưng vẫn nên làm vậy cho rõ ràng khi debug.
+
 **12. Play**
 Bấm nút Play. Kỳ vọng: Console không có exception, màn hình Main Menu hiện ra (nền
 tối, tiêu đề "GemGrid", Best Score, nút START GAME).

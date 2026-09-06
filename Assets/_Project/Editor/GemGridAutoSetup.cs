@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace GemGrid.EditorTools
@@ -41,6 +42,7 @@ namespace GemGrid.EditorTools
                 GemGridSceneSetup.EnsureMainMenuScene();
                 GemGridSceneSetup.EnsureGameplayScene();
                 EnsureBuildSettingsScenes();
+                EnsurePlayModeStartScene();
             }
             catch (Exception ex)
             {
@@ -74,6 +76,32 @@ namespace GemGrid.EditorTools
 
             EditorBuildSettings.scenes = newScenes.ToArray();
             Debug.Log("[GemGrid] Set Build Settings scene order: Boot, MainMenu, Gameplay.");
+        }
+
+        /// <summary>
+        /// Root cause of "GameManagerBehaviour.Instance is null" when pressing Play
+        /// with MainMenu.unity or Gameplay.unity open: by default, the Unity Editor
+        /// Play button runs whichever scene is currently open in the Editor, NOT
+        /// Boot.unity — so GameManagerBehaviour (and its DontDestroyOnLoad instance)
+        /// never gets created at all. Setting <see cref="EditorSceneManager.playModeStartScene"/>
+        /// forces every Play press to always start from Boot first, regardless of
+        /// which scene tab is open, which is exactly what the Boot ▸ MainMenu ▸
+        /// Gameplay flow requires. This is an Editor-only workflow setting (stored in
+        /// local, gitignored Library/UserSettings state) — reapplied here on every
+        /// compile so it doesn't depend on anyone configuring it by hand or on it
+        /// surviving a fresh clone.
+        /// </summary>
+        private static void EnsurePlayModeStartScene()
+        {
+            var bootScene = AssetDatabase.LoadAssetAtPath<SceneAsset>(GemGridSceneSetup.BootScenePath);
+            if (bootScene == null) return; // EnsureBootScene() above failed silently; nothing to point to yet.
+
+            if (EditorSceneManager.playModeStartScene != bootScene)
+            {
+                EditorSceneManager.playModeStartScene = bootScene;
+                Debug.Log("[GemGrid] Set Play Mode Start Scene to Boot.unity — pressing Play now always " +
+                           "starts from Boot regardless of which scene tab is open in the Editor.");
+            }
         }
     }
 }

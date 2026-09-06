@@ -82,6 +82,10 @@ namespace UnityEditor
     {
         public UnityEngine.Object objectReferenceValue { get; set; }
     }
+
+    public sealed class SceneAsset : UnityEngine.Object
+    {
+    }
 }
 
 namespace UnityEditor.SceneManagement
@@ -98,6 +102,7 @@ namespace UnityEditor.SceneManagement
 
     public static class EditorSceneManager
     {
+        public static UnityEditor.SceneAsset playModeStartScene { get; set; }
         public static UnityEngine.SceneManagement.Scene NewScene(NewSceneSetup setup, NewSceneMode mode) => default;
         public static bool SaveScene(UnityEngine.SceneManagement.Scene scene, string path) => true;
     }
